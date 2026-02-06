@@ -1,6 +1,6 @@
 // API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'https://analyst-named-carry-epson.trycloudflare.com'
-export const WS_URL = import.meta.env.VITE_WS_URL || 'wss://analyst-named-carry-epson.trycloudflare.com'
+export const API_URL = import.meta.env.VITE_API_URL || 'https://firmware-infinite-jump-realistic.trycloudflare.com'
+export const WS_URL = import.meta.env.VITE_WS_URL || 'wss://firmware-infinite-jump-realistic.trycloudflare.com'
 
 // Monad Network Configuration
 export const MONAD_CHAIN = {
