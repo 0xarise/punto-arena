@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+.env.local
+*.key
+*private*
+
+# Build
+build/
+dist/
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+.coverage
+
+# Logs
+*.log

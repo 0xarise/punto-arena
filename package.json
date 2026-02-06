@@ -1,0 +1,20 @@
+{
+  "name": "punto-arena",
+  "version": "1.0.0",
+  "description": "On-chain wagering for Punto card game on Monad",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "deploy:monad": "hardhat run scripts/deploy.js --network monad",
+    "deploy:local": "hardhat run scripts/deploy.js --network hardhat"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@openzeppelin/contracts": "^5.0.1",
+    "dotenv": "^16.3.1",
+    "hardhat": "^2.19.4"
+  },
+  "keywords": ["monad", "punto", "wagering", "blockchain", "hackathon"],
+  "license": "MIT"
+}
