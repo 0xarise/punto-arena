@@ -970,8 +970,31 @@ function selectMode(mode, engine) {
     }
 }
 
+function playAgain() {
+    // Reset game state but keep wallet connected
+    gameState.roomId = null;
+    gameState.playerRole = null;
+    gameState.status = null;
+    gameState.myTurn = false;
+    gameState.mode = null;
+    gameState.aiEngine = null;
+    clearSession();
+
+    // Hide everything game-related
+    document.getElementById('game-over-modal-wager').style.display = 'none';
+    document.getElementById('game-area-wager').style.display = 'none';
+    document.getElementById('invite-section-wager').style.display = 'none';
+    document.getElementById('wager-setup').style.display = 'none';
+    const aiDiff = document.getElementById('ai-difficulty');
+    if (aiDiff) aiDiff.style.display = 'none';
+
+    // Show mode selection (wallet is still connected)
+    document.getElementById('mode-selection').style.display = 'block';
+}
+
 // Expose functions to global scope for HTML onclick handlers
 window.createWageredRoom = createWageredRoom;
 window.copyInviteWager = copyInviteWager;
 window.selectMode = selectMode;
 window.showAIDifficulty = showAIDifficulty;
+window.playAgain = playAgain;
