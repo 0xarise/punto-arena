@@ -129,8 +129,9 @@ def api_leaderboard():
 # SPECTATOR & ARENA ROUTES
 # ============================================================================
 
+@app.route('/spectate')
 @app.route('/spectate/<room_id>')
-def spectate_room(room_id):
+def spectate_room(room_id=''):
     """Spectator view for AI vs AI matches (no wallet required)"""
     return render_template('spectate.html', room_id=room_id)
 
