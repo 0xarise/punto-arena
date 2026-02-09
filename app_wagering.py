@@ -390,21 +390,24 @@ def run_arena_match(room_id, engine1, engine2, wager_mon, on_chain=False):
     end_data = {
         'winner': winner_num,
         'reason': reason,
-        'payout': round(payout, 4),
-        'tx_hash': tx_result,
-        'explorer_link': f"https://monad.socialscan.io/tx/{tx_result}",
+        'payout': round(payout, 4) if on_chain else 0,
+        'tx_hash': tx_result if tx_result else None,
+        'explorer_link': f"https://monad.socialscan.io/tx/{tx_result}" if tx_result else None,
     }
     rooms[room_id]['arena_result'] = end_data
     socketio.emit('game_end', end_data, room=room_id)
 
     # Log evidence
+    a1_addr = match_info.get('agent1', {}).get('address', '')
+    a2_addr = match_info.get('agent2', {}).get('address', '')
     match_data = {
         "match_id": evidence_logger.get_next_match_id(),
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "agent1": {"engine": engine1, "model": agent1.model or "default", "address": wallet1.address},
-        "agent2": {"engine": engine2, "model": agent2.model or "default", "address": wallet2.address},
+        "agent1": {"engine": engine1, "model": agent1.model or "default", "address": a1_addr},
+        "agent2": {"engine": engine2, "model": agent2.model or "default", "address": a2_addr},
         "game_id": game_id,
         "room_id": room_id,
+        "on_chain": on_chain,
         "tx_create": tx_create,
         "tx_join": tx_join,
         "tx_result": tx_result,
@@ -412,7 +415,7 @@ def run_arena_match(room_id, engine1, engine2, wager_mon, on_chain=False):
         "winner_address": winner_address,
         "reason": reason,
         "turns": turns,
-        "wager_mon": wager_mon,
+        "wager_mon": wager_mon if on_chain else 0,
         "moves": [],
         "explorer_base": "https://monad.socialscan.io/tx/",
     }
