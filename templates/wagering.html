@@ -586,6 +586,40 @@
             animation: board-shake 0.4s ease;
         }
 
+        /* Difficulty selector buttons */
+        .btn-diff {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 14px 24px;
+            min-width: 140px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            background: var(--bg-card);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-diff:hover {
+            border-color: var(--player1);
+            background: rgba(74, 158, 255, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .diff-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--player1);
+            letter-spacing: 1px;
+        }
+
+        .diff-desc {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
         /* AI mode indicator */
         .ai-mode-badge {
             display: inline-block;
@@ -870,15 +904,33 @@
         <!-- Mode Selection (shown after wallet connect) -->
         <div id="mode-selection" class="game-setup" style="display: none;">
             <h2>Choose Mode</h2>
-            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px;">
                 <button class="btn-primary" onclick="selectMode('pvp')" style="flex: 1; min-width: 200px; max-width: 280px;">
                     PvP Mode
                     <br><span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.7;">Wager MON & play a friend</span>
                 </button>
-                <button class="btn-primary" onclick="selectMode('ai')" style="flex: 1; min-width: 200px; max-width: 280px; border-color: var(--player1); color: var(--player1); background: rgba(74, 158, 255, 0.1);">
+                <button class="btn-primary" onclick="showAIDifficulty()" style="flex: 1; min-width: 200px; max-width: 280px; border-color: var(--player1); color: var(--player1); background: rgba(74, 158, 255, 0.1);">
                     vs AI
                     <br><span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.7;">Practice against the AI (no wager)</span>
                 </button>
+            </div>
+            <!-- AI Difficulty Sub-selection -->
+            <div id="ai-difficulty" style="display: none; text-align: center;">
+                <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;">Select Difficulty</p>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn-diff" onclick="selectMode('ai', 'heuristic')">
+                        <span class="diff-label">Easy</span>
+                        <span class="diff-desc">Heuristic AI &bull; Instant</span>
+                    </button>
+                    <button class="btn-diff" onclick="selectMode('ai', 'claude')">
+                        <span class="diff-label" style="color: #a78bfa;">Claude</span>
+                        <span class="diff-desc">Anthropic LLM &bull; ~5s/move</span>
+                    </button>
+                    <button class="btn-diff" onclick="selectMode('ai', 'openai')">
+                        <span class="diff-label" style="color: #34d399;">OpenAI</span>
+                        <span class="diff-desc">GPT LLM &bull; ~5s/move</span>
+                    </button>
+                </div>
             </div>
         </div>
 

@@ -18,7 +18,7 @@ import random
 import time
 
 from game_logic import PuntoGame
-from hackathon_matches import heuristic_move, valid_moves as hm_valid_moves
+from hackathon_matches import heuristic_move, valid_moves as hm_valid_moves, MatchAgent
 from blockchain.wagering import get_blockchain
 import evidence_logger
 import elo
@@ -696,6 +696,7 @@ def handle_get_game_state(data):
 def handle_create_ai_room(data):
     """Create a room for human vs AI (no wager, no blockchain)"""
     wallet_address = data.get('wallet_address', 'anonymous')
+    engine = data.get('engine', 'heuristic')
     sid = request.sid
 
     room_id = f"ai_{secrets.token_hex(4)}"
@@ -703,10 +704,15 @@ def handle_create_ai_room(data):
 
     first_player = random.choice(['player1', 'player2'])
 
+    # Create AI agent (supports heuristic, claude, openai)
+    ai_agent = MatchAgent("ai_opponent", "openai", engine)
+
     rooms[room_id] = {
         'id': room_id,
         'mode': 'ai',
         'game': game,
+        'ai_agent': ai_agent,
+        'ai_engine': engine,
         'players': {
             sid: {
                 'sid': sid,
@@ -741,7 +747,7 @@ def handle_create_ai_room(data):
             'cards': sorted(game.hand_claude, key=lambda c: c['value'], reverse=True)
         },
         'player2': {
-            'name': 'AI (Heuristic)',
+            'name': f'AI ({engine.capitalize()})',
             'cards': sorted(game.hand_openai, key=lambda c: c['value'], reverse=True)
         },
         'current_turn': first_player,
@@ -843,11 +849,24 @@ def _ai_respond(room_id):
             return
 
         game = room['game']
+        ai_agent = room.get('ai_agent')
+        move = None
 
+        # Try agent first (LLM or heuristic), fallback to pure heuristic
         try:
-            move = heuristic_move(game, 'openai')
-        except RuntimeError:
-            # No valid moves for AI
+            if ai_agent:
+                move = ai_agent.choose_move(game)
+            else:
+                move = heuristic_move(game, 'openai')
+        except Exception as e:
+            print(f"⚠️ AI agent move failed: {e}, trying heuristic fallback")
+            try:
+                move = heuristic_move(game, 'openai')
+            except RuntimeError:
+                pass
+
+        if not move:
+            # No valid moves — human wins
             room['status'] = 'finished'
             room['winner'] = 'player1'
             socketio.emit('move_made', {

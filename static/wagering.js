@@ -1,6 +1,50 @@
 // Punto Arena - Wagering Frontend with MetaMask
 // UX Overhaul: Refresh resilience, turn indicators, wallet-only login
 
+// ============================================================================
+// SOUND EFFECTS (Web Audio API - no files needed)
+// ============================================================================
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    return audioCtx;
+}
+
+function playTone(freq, duration, type = 'sine', volume = 0.3) {
+    try {
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.value = volume;
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    } catch (e) { /* audio not available */ }
+}
+
+function soundCardPlace() { playTone(880, 0.06, 'sine', 0.15); }
+function soundOpponentMove() { playTone(587, 0.08, 'triangle', 0.12); }
+function soundYourTurn() { playTone(1047, 0.04, 'sine', 0.1); setTimeout(() => playTone(1319, 0.04, 'sine', 0.1), 50); }
+function soundInvalid() { playTone(180, 0.15, 'sawtooth', 0.12); }
+function soundWin() {
+    playTone(523, 0.12, 'sine', 0.2);
+    setTimeout(() => playTone(659, 0.12, 'sine', 0.2), 120);
+    setTimeout(() => playTone(784, 0.12, 'sine', 0.2), 240);
+    setTimeout(() => playTone(1047, 0.25, 'sine', 0.25), 360);
+}
+function soundLose() {
+    playTone(400, 0.15, 'triangle', 0.15);
+    setTimeout(() => playTone(320, 0.15, 'triangle', 0.15), 150);
+    setTimeout(() => playTone(260, 0.3, 'triangle', 0.15), 300);
+}
+
 let provider, signer, contract, walletAddress;
 let socket;
 let gameState = {
@@ -241,6 +285,8 @@ if (typeof window.ethereum !== 'undefined') {
 // ============================================================================
 
 function showToast(message) {
+    soundInvalid();
+
     // Shake the board
     const board = document.getElementById('game-board-wager');
     if (board) {
@@ -621,7 +667,8 @@ function startGameUI(data) {
     // Update wager display — hide in AI mode
     const wagerDisplay = document.querySelector('.wager-display');
     if (gameState.mode === 'ai') {
-        if (wagerDisplay) wagerDisplay.innerHTML = '<h3><span class="ai-mode-badge">vs AI</span></h3><p>Practice mode — no wager</p>';
+        const engineName = gameState.aiEngine === 'claude' ? 'Claude' : gameState.aiEngine === 'openai' ? 'OpenAI' : 'Heuristic';
+        if (wagerDisplay) wagerDisplay.innerHTML = `<h3><span class="ai-mode-badge">vs ${engineName} AI</span></h3><p>Practice mode — no wager</p>`;
     } else {
         gameState.wager = data.wager || gameState.wager;
         document.getElementById('current-wager').textContent = gameState.wager;
@@ -745,6 +792,7 @@ function handleCellClick(row, col) {
         movePayload.room_id = gameState.roomId;
     }
     socket.emit(moveEvent, movePayload);
+    soundCardPlace();
 
     gameState.selectedCard = null;
     gameState.myTurn = false;
@@ -769,7 +817,15 @@ function updateGameState(data) {
     }
 
     // Update turn
+    const wasMyTurn = gameState.myTurn;
     gameState.myTurn = (data.next_turn === gameState.playerRole);
+
+    // Sound: opponent moved → it's now my turn
+    if (data.player !== gameState.playerRole) {
+        soundOpponentMove();
+        if (gameState.myTurn) setTimeout(soundYourTurn, 150);
+    }
+
     updateTurnIndicator();
     saveGameState();
 
@@ -842,6 +898,7 @@ function showGameOver(data) {
     const didIWin = (data.winner === gameState.playerRole);
 
     if (didIWin) {
+        soundWin();
         winnerText.innerHTML = gameState.mode === 'ai' ? '🎉 YOU BEAT THE AI!' : '🎉 YOU WON!';
         winnerText.style.color = '#10b981';
 
@@ -853,6 +910,7 @@ function showGameOver(data) {
             document.getElementById('payout-display').style.display = 'none';
         }
     } else {
+        soundLose();
         winnerText.innerHTML = gameState.mode === 'ai' ? '😔 AI Wins' : '😔 You Lost';
         winnerText.style.color = '#ef4444';
         document.getElementById('payout-display').style.display = 'none';
@@ -868,15 +926,23 @@ function showGameOver(data) {
 // MODE SELECTION
 // ============================================================================
 
-function selectMode(mode) {
+function showAIDifficulty() {
+    document.getElementById('ai-difficulty').style.display = 'block';
+}
+
+function selectMode(mode, engine) {
     gameState.mode = mode;
-    document.getElementById('mode-selection').style.display = 'none';
 
     if (mode === 'pvp') {
+        document.getElementById('ai-difficulty').style.display = 'none';
+        document.getElementById('mode-selection').style.display = 'none';
         document.getElementById('wager-setup').style.display = 'block';
     } else if (mode === 'ai') {
-        showLoading('Starting AI game...');
-        socket.emit('create_ai_room', { wallet_address: walletAddress });
+        document.getElementById('mode-selection').style.display = 'none';
+        const engineLabel = engine === 'heuristic' ? 'Easy AI' : engine === 'claude' ? 'Claude AI' : 'OpenAI';
+        showLoading(`Starting game vs ${engineLabel}...`);
+        gameState.aiEngine = engine || 'heuristic';
+        socket.emit('create_ai_room', { wallet_address: walletAddress, engine: engine || 'heuristic' });
     }
 }
 
@@ -884,3 +950,4 @@ function selectMode(mode) {
 window.createWageredRoom = createWageredRoom;
 window.copyInviteWager = copyInviteWager;
 window.selectMode = selectMode;
+window.showAIDifficulty = showAIDifficulty;
