@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto Arena - Spectator Mode</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <style>
+        /* ================================================================
+           PUNTO ARENA - SPECTATOR MODE
+           Dark esports broadcast theme
+           ================================================================ */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d0d1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-board: #0f3460;
+            --border-subtle: #2a2a4a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #8888aa;
+            --text-muted: #555577;
+            --player1: #4a9eff;
+            --player1-glow: rgba(74, 158, 255, 0.4);
+            --player1-bg: rgba(74, 158, 255, 0.15);
+            --player2: #ff4a4a;
+            --player2-glow: rgba(255, 74, 74, 0.4);
+            --player2-bg: rgba(255, 74, 74, 0.15);
+            --accent: #fbbf24;
+            --accent-glow: rgba(251, 191, 36, 0.3);
+            --success: #10b981;
+            --cell-empty: #1a1a3e;
+            --cell-border: #2a2a5e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Broadcast-style scanline overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+            z-index: 9999;
+        }
+
+        /* ---- HEADER ---- */
+        .broadcast-header {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 16px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .broadcast-header h1 {
+            font-size: 1.8em;
+            font-weight: 800;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(90deg, var(--player1), #fff, var(--player2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .broadcast-header .subtitle {
+            font-size: 0.75em;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .live-badge {
+            display: inline-block;
+            background: #ff0000;
+            color: white;
+            font-size: 0.65em;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 3px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: live-pulse 2s ease-in-out infinite;
+            position: absolute;
+            top: 16px;
+            right: 24px;
+        }
+
+        @keyframes live-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 18px;
+            left: 24px;
+            font-size: 0.7em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .connection-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: background 0.3s;
+        }
+
+        .connection-dot.connected {
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+        }
+
+        .connection-dot.disconnected {
+            background: var(--player2);
+            box-shadow: 0 0 6px var(--player2);
+        }
+
+        /* ---- MATCH INFO BAR ---- */
+        .match-info-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 32px;
+            padding: 12px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.8em;
+            flex-wrap: wrap;
+        }
+
+        .match-info-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .match-info-item .label {
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+        }
+
+        .match-info-item .value {
+            color: var(--accent);
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+        }
+
+        .match-info-item .value.wager {
+            font-size: 1.1em;
+        }
+
+        /* ---- MAIN LAYOUT ---- */
+        .spectator-layout {
+            display: grid;
+            grid-template-columns: 220px 1fr 260px;
+            gap: 0;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 16px;
+            min-height: calc(100vh - 130px);
+        }
+
+        /* ---- PLAYER PANELS ---- */
+        .player-panel {
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .player-badge {
+            width: 100%;
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .player-badge.p1 {
+            background: var(--player1-bg);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+        }
+
+        .player-badge.p2 {
+            background: var(--player2-bg);
+            border: 1px solid rgba(255, 74, 74, 0.3);
+        }
+
+        .player-badge.active.p1 {
+            box-shadow: 0 0 20px var(--player1-glow), inset 0 0 20px rgba(74, 158, 255, 0.05);
+            border-color: var(--player1);
+        }
+
+        .player-badge.active.p2 {
+            box-shadow: 0 0 20px var(--player2-glow), inset 0 0 20px rgba(255, 74, 74, 0.05);
+            border-color: var(--player2);
+        }
+
+        .player-number {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+
+        .player-badge.p1 .player-number { color: var(--player1); }
+        .player-badge.p2 .player-number { color: var(--player2); }
+
+        .player-address {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .player-engine {
+            font-size: 0.7em;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .player-cards-count {
+            margin-top: 12px;
+            font-size: 0.8em;
+            color: var(--text-secondary);
+        }
+
+        .player-cards-count .count {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+            margin-top: 2px;
+        }
+
+        .turn-arrow {
+            display: none;
+            margin-top: 12px;
+            font-size: 0.75em;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            animation: turn-blink 1.2s ease-in-out infinite;
+        }
+
+        .player-badge.active .turn-arrow {
+            display: block;
+        }
+
+        .player-badge.p1 .turn-arrow { color: var(--player1); }
+        .player-badge.p2 .turn-arrow { color: var(--player2); }
+
+        @keyframes turn-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* ---- BOARD AREA ---- */
+        .board-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 20px 0;
+        }
+
+        .turn-indicator-bar {
+            padding: 8px 24px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            transition: all 0.3s;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .turn-indicator-bar.p1-turn {
+            border-color: var(--player1);
+            color: var(--player1);
+            box-shadow: 0 0 12px var(--player1-glow);
+        }
+
+        .turn-indicator-bar.p2-turn {
+            border-color: var(--player2);
+            color: var(--player2);
+            box-shadow: 0 0 12px var(--player2-glow);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+            width: 100%;
+            max-width: 420px;
+            aspect-ratio: 1;
+            background: var(--bg-secondary);
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border-subtle);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .cell {
+            aspect-ratio: 1;
+            border: 1px solid var(--cell-border);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.6em;
+            font-weight: 800;
+            background: var(--cell-empty);
+            transition: all 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cell.player1 {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.25), rgba(74, 158, 255, 0.1));
+            border-color: var(--player1);
+            color: var(--player1);
+            text-shadow: 0 0 10px var(--player1-glow);
+        }
+
+        .cell.player2 {
+            background: linear-gradient(135deg, rgba(255, 74, 74, 0.25), rgba(255, 74, 74, 0.1));
+            border-color: var(--player2);
+            color: var(--player2);
+            text-shadow: 0 0 10px var(--player2-glow);
+        }
+
+        /* ---- 4-Color Card System ---- */
+        .cell.color-red {
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.35), rgba(192, 57, 43, 0.15));
+            border-color: #e74c3c;
+            color: #e74c3c;
+            text-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
+        }
+
+        .cell.color-blue {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.35), rgba(41, 128, 185, 0.15));
+            border-color: #3498db;
+            color: #3498db;
+            text-shadow: 0 0 10px rgba(52, 152, 219, 0.4);
+        }
+
+        .cell.color-green {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.35), rgba(39, 174, 96, 0.15));
+            border-color: #2ecc71;
+            color: #2ecc71;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+        }
+
+        .cell.color-yellow {
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.35), rgba(243, 156, 18, 0.15));
+            border-color: #f1c40f;
+            color: #f1c40f;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.4);
+        }
+
+        /* Move animation */
+        .cell.new-move {
+            animation: card-appear 0.5s ease-out;
+        }
+
+        @keyframes card-appear {
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Neon flash on new move */
+        .cell.flash-p1 {
+            animation: neon-flash-blue 0.6s ease-out;
+        }
+
+        .cell.flash-p2 {
+            animation: neon-flash-red 0.6s ease-out;
+        }
+
+        @keyframes neon-flash-blue {
+            0% { box-shadow: 0 0 20px var(--player1), inset 0 0 20px var(--player1-glow); }
+            100% { box-shadow: none; }
+        }
+
+        @keyframes neon-flash-red {
+            0% { box-shadow: 0 0 20px var(--player2), inset 0 0 20px var(--player2-glow); }
+            100% { box-shadow: none; }
+        }
+
+        /* Flash animations for 4-color system */
+        .cell.flash-red {
+            animation: neon-flash-color-red 0.6s ease-out;
+        }
+
+        .cell.flash-blue {
+            animation: neon-flash-color-blue 0.6s ease-out;
+        }
+
+        .cell.flash-green {
+            animation: neon-flash-color-green 0.6s ease-out;
+        }
+
+        .cell.flash-yellow {
+            animation: neon-flash-color-yellow 0.6s ease-out;
+        }
+
+        @keyframes neon-flash-color-red {
+            0% { box-shadow: 0 0 20px #e74c3c, inset 0 0 20px rgba(231, 76, 60, 0.4); }
+            100% { box-shadow: none; }
+        }
+
+        @keyframes neon-flash-color-blue {
+            0% { box-shadow: 0 0 20px #3498db, inset 0 0 20px rgba(52, 152, 219, 0.4); }
+            100% { box-shadow: none; }
+        }
+
+        @keyframes neon-flash-color-green {
+            0% { box-shadow: 0 0 20px #2ecc71, inset 0 0 20px rgba(46, 204, 113, 0.4); }
+            100% { box-shadow: none; }
+        }
+
+        @keyframes neon-flash-color-yellow {
+            0% { box-shadow: 0 0 20px #f1c40f, inset 0 0 20px rgba(241, 196, 15, 0.4); }
+            100% { box-shadow: none; }
+        }
+
+        /* Move dot colors for 4-color system */
+        .move-dot.color-red {
+            background: #e74c3c;
+            box-shadow: 0 0 4px rgba(231, 76, 60, 0.4);
+        }
+
+        .move-dot.color-blue {
+            background: #3498db;
+            box-shadow: 0 0 4px rgba(52, 152, 219, 0.4);
+        }
+
+        .move-dot.color-green {
+            background: #2ecc71;
+            box-shadow: 0 0 4px rgba(46, 204, 113, 0.4);
+        }
+
+        .move-dot.color-yellow {
+            background: #f1c40f;
+            box-shadow: 0 0 4px rgba(241, 196, 15, 0.4);
+        }
+
+        /* ---- SIDEBAR (Move History) ---- */
+        .sidebar {
+            padding: 20px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .sidebar-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .sidebar-section h3 {
+            font-size: 0.7em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .move-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .move-list li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8em;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            transition: all 0.3s;
+        }
+
+        .move-list li.new-entry {
+            animation: slide-in 0.4s ease-out;
+        }
+
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .move-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .move-dot.p1 {
+            background: var(--player1);
+            box-shadow: 0 0 4px var(--player1-glow);
+        }
+
+        .move-dot.p2 {
+            background: var(--player2);
+            box-shadow: 0 0 4px var(--player2-glow);
+        }
+
+        .move-text {
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .move-number {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            min-width: 20px;
+        }
+
+        /* Empty move history */
+        .move-list-empty {
+            color: var(--text-muted);
+            font-size: 0.8em;
+            text-align: center;
+            padding: 16px 0;
+            font-style: italic;
+        }
+
+        /* ---- WAITING STATE ---- */
+        .waiting-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .waiting-container h2 {
+            font-size: 1.4em;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .waiting-container p {
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+
+        .waiting-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ---- GAME OVER MODAL ---- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(6px);
+        }
+
+        .modal-overlay.visible {
+            display: flex;
+        }
+
+        .result-modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 40px 48px;
+            text-align: center;
+            max-width: 480px;
+            width: 90%;
+            animation: modal-enter 0.4s ease-out;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+        }
+
+        @keyframes modal-enter {
+            from {
+                opacity: 0;
+                transform: scale(0.85) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .result-modal .result-title {
+            font-size: 2em;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .result-modal .result-title.p1-wins {
+            color: var(--player1);
+            text-shadow: 0 0 20px var(--player1-glow);
+        }
+
+        .result-modal .result-title.p2-wins {
+            color: var(--player2);
+            text-shadow: 0 0 20px var(--player2-glow);
+        }
+
+        .result-modal .result-title.draw {
+            color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .result-reason {
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+
+        .result-payout {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .result-payout .payout-label {
+            font-size: 0.75em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .result-payout .payout-amount {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--success);
+            font-family: 'Courier New', monospace;
+        }
+
+        .result-tx-link {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.8em;
+            font-family: 'Courier New', monospace;
+            transition: all 0.2s;
+        }
+
+        .result-tx-link:hover {
+            background: var(--border-subtle);
+            border-color: var(--accent);
+        }
+
+        .result-close-btn {
+            margin-top: 20px;
+            padding: 10px 32px;
+            background: transparent;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s;
+        }
+
+        .result-close-btn:hover {
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        /* ---- FOOTER ---- */
+        .spectator-footer {
+            text-align: center;
+            padding: 12px;
+            font-size: 0.7em;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .spectator-footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .spectator-footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .spectator-layout {
+                grid-template-columns: 1fr;
+                padding: 12px;
+            }
+
+            .player-panel {
+                padding: 12px 0;
+            }
+
+            .player-badge {
+                max-width: 300px;
+            }
+
+            .board-area {
+                order: -1;
+            }
+
+            .game-board {
+                max-width: 340px;
+            }
+
+            .cell {
+                font-size: 1.2em;
+            }
+
+            .broadcast-header h1 {
+                font-size: 1.2em;
+                letter-spacing: 2px;
+            }
+
+            .live-badge {
+                position: static;
+                margin-top: 8px;
+            }
+
+            .connection-status {
+                position: static;
+                justify-content: center;
+                margin-bottom: 8px;
+            }
+
+            .match-info-bar {
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Broadcast Header -->
+    <div class="broadcast-header">
+        <div class="connection-status">
+            <div id="connection-dot" class="connection-dot"></div>
+            <span id="connection-text">Connecting...</span>
+        </div>
+        <h1>PUNTO ARENA</h1>
+        <div class="subtitle">Spectator Mode</div>
+        <div id="live-badge" class="live-badge" style="display: none;">LIVE</div>
+        <div style="margin-top: 8px;">
+            <a href="/arena" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Arena</a>
+            <a href="/leaderboard" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Leaderboard</a>
+            <a href="/" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Wager</a>
+        </div>
+    </div>
+
+    <!-- Match Info Bar -->
+    <div id="match-info-bar" class="match-info-bar" style="display: none;">
+        <div class="match-info-item">
+            <span class="label">Game</span>
+            <span id="game-id-display" class="value">--</span>
+        </div>
+        <div class="match-info-item">
+            <span class="label">Wager</span>
+            <span id="wager-display" class="value wager">-- MON</span>
+        </div>
+        <div class="match-info-item">
+            <span class="label">Engine 1</span>
+            <span id="engine1-display" class="value">--</span>
+        </div>
+        <div class="match-info-item">
+            <span class="label">Engine 2</span>
+            <span id="engine2-display" class="value">--</span>
+        </div>
+    </div>
+
+    <!-- Waiting State (shown before game starts) -->
+    <div id="waiting-state" class="waiting-container">
+        <div class="waiting-spinner"></div>
+        <h2 style="margin-top: 24px;">Waiting for match...</h2>
+        <p>The game will appear here once it begins.</p>
+    </div>
+
+    <!-- Main Spectator Layout (hidden until game starts) -->
+    <div id="spectator-layout" class="spectator-layout" style="display: none;">
+
+        <!-- Player 1 Panel (Left) -->
+        <div class="player-panel">
+            <div id="player1-badge" class="player-badge p1">
+                <div class="player-number">Player 1</div>
+                <div id="player1-address" class="player-address">--</div>
+                <div id="player1-engine" class="player-engine">--</div>
+                <div class="player-cards-count">
+                    Cards Left
+                    <span id="player1-cards" class="count">--</span>
+                </div>
+                <div class="turn-arrow">Playing...</div>
+            </div>
+        </div>
+
+        <!-- Board Area (Center) -->
+        <div class="board-area">
+            <div id="turn-indicator" class="turn-indicator-bar">Waiting for first move...</div>
+            <div id="game-board" class="game-board"></div>
+        </div>
+
+        <!-- Sidebar (Right) -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <h3>Move History</h3>
+                <ul id="move-list" class="move-list">
+                    <li class="move-list-empty">No moves yet</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="result-modal-overlay" class="modal-overlay">
+        <div class="result-modal">
+            <div id="result-title" class="result-title">Game Over</div>
+            <div id="result-reason" class="result-reason"></div>
+            <div id="result-payout-section" class="result-payout" style="display: none;">
+                <div class="payout-label">Winner Payout</div>
+                <div id="result-payout-amount" class="payout-amount">-- MON</div>
+            </div>
+            <div id="result-tx-container" style="display: none;">
+                <a id="result-tx-link" class="result-tx-link" href="#" target="_blank" rel="noopener">
+                    View Transaction on Explorer
+                </a>
+            </div>
+            <button class="result-close-btn" onclick="closeResultModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="spectator-footer">
+        Punto Arena on <a href="https://monadexplorer.com" target="_blank" rel="noopener">Monad</a>
+    </div>
+
+    <script src="/static/spectator.js"></script>
+</body>
+</html>

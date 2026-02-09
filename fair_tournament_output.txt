@@ -1,0 +1,341 @@
+
+╔═══════════════════════════════════════════════╗
+║   FAIR PUNTO AI TOURNAMENT                    ║
+║   Gracze zmieniają się! ⚖️                     ║
+╚═══════════════════════════════════════════════╝
+    
+🎮 Inicjalizacja SPRAWIEDLIWEGO turnieju...
+✅ Claude player gotowy
+✅ OpenAI player gotowy
+
+======================================================================
+🏆 SPRAWIEDLIWY TURNIEJ - 10 GIER
+======================================================================
+⚖️  ZASADA: Gracze zmieniają się co grę!
+   Nieparzyste gry (1,3,5,7,9): Claude zaczyna
+   Parzyste gry (2,4,6,8,10): OpenAI zaczyna
+======================================================================
+
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 1/10 | 🔵 CLAUDE zaczyna!
+Stan: Claude 0 - 0 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔵 CLAUDE rozpoczyna...
+   Ruch: 7 → (2, 2)
+
+🔴 OPENAI odpowiada...
+   Ruch: 6 → (2, 1)
+   Ruch: 5 → (2, 3)
+   Ruch: 4 → (2, 0)
+   Ruch: 8 → (2, 4)
+   Ruch: 8 → (2, 0)
+   Ruch: 3 → (2, 5)
+
+🔵 ZWYCIĘZCA: CLAUDE
+
+📊 Stan turnieju po 1 grach:
+   🔵 Claude:  1
+   🔴 OpenAI:  0
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 2/10 | 🔴 OPENAI zaczyna!
+Stan: Claude 1 - 0 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔴 OPENAI rozpoczyna...
+   Ruch: 5 → (2, 2)
+
+🔵 CLAUDE odpowiada...
+   Ruch: 7 → (3, 2)
+   Ruch: 8 → (2, 3)
+   Ruch: 6 → (3, 3)
+   Ruch: 1 → (2, 1)
+   Ruch: 3 → (4, 2)
+   Ruch: 2 → (1, 3)
+   Ruch: 6 → (4, 3)
+   Ruch: 8 → (2, 2)
+   Ruch: 1 → (5, 3)
+   Ruch: 3 → (1, 2)
+   Ruch: 2 → (2, 4)
+   Ruch: 7 → (5, 3)
+   Ruch: 4 → (2, 1)
+   Ruch: 1 → (0, 5)
+   Ruch: 8 → (1, 4)
+   Ruch: 7 → (1, 4)
+   Fallback: 3 → (0, 0)
+   ⚠️ Błąd AI: Brak pola 'card'
+   Ruch: 3 → (2, 5)
+   Ruch: 4 → (0, 2)
+   Ruch: 8 → (0, 3)
+   Ruch: 9 → (1, 4)
+   Ruch: 9 → (5, 4)
+
+🔵 ZWYCIĘZCA: CLAUDE
+
+📊 Stan turnieju po 2 grach:
+   🔵 Claude:  2
+   🔴 OpenAI:  0
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 3/10 | 🔵 CLAUDE zaczyna!
+Stan: Claude 2 - 0 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔵 CLAUDE rozpoczyna...
+   Ruch: 3 → (2, 2)
+
+🔴 OPENAI odpowiada...
+   Ruch: 7 → (2, 2)
+   Ruch: 7 → (3, 2)
+   Ruch: 9 → (3, 3)
+   Ruch: 4 → (4, 2)
+   Ruch: 9 → (2, 1)
+   Ruch: 4 → (5, 2)
+   Ruch: 4 → (0, 2)
+   Ruch: 2 → (2, 3)
+   Ruch: 5 → (3, 3)
+   Fallback: 3 → (0, 0)
+   Ruch: 5 → (1, 2)
+   Ruch: 5 → (1, 0)
+   Ruch: 6 → (1, 3)
+   Ruch: 8 → (2, 3)
+   Ruch: 9 → (0, 3)
+   Ruch: 6 → (4, 3)
+   Ruch: 2 → (0, 4)
+   Ruch: 2 → (1, 4)
+   Ruch: 7 → (0, 4)
+   Ruch: 1 → (2, 0)
+
+🔴 ZWYCIĘZCA: OPENAI
+
+📊 Stan turnieju po 3 grach:
+   🔵 Claude:  2
+   🔴 OpenAI:  1
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 4/10 | 🔴 OPENAI zaczyna!
+Stan: Claude 2 - 1 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔴 OPENAI rozpoczyna...
+   Ruch: 6 → (2, 2)
+
+🔵 CLAUDE odpowiada...
+   Ruch: 8 → (3, 2)
+   Ruch: 9 → (2, 2)
+   Ruch: 4 → (4, 2)
+   Ruch: 4 → (2, 3)
+   Ruch: 6 → (1, 2)
+   Ruch: 3 → (1, 3)
+   Ruch: 3 → (5, 2)
+   Ruch: 1 → (3, 3)
+   Ruch: 4 → (0, 2)
+   Ruch: 3 → (4, 3)
+
+🔴 ZWYCIĘZCA: OPENAI
+
+📊 Stan turnieju po 4 grach:
+   🔵 Claude:  2
+   🔴 OpenAI:  2
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 5/10 | 🔵 CLAUDE zaczyna!
+Stan: Claude 2 - 2 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔵 CLAUDE rozpoczyna...
+   Ruch: 8 → (2, 2)
+
+🔴 OPENAI odpowiada...
+   Ruch: 8 → (2, 2)
+   Fallback: 8 → (0, 0)
+   Ruch: 7 → (3, 2)
+   Ruch: 8 → (2, 1)
+   Ruch: 5 → (4, 2)
+   Ruch: 4 → (3, 0)
+   Ruch: 4 → (1, 2)
+
+🔵 ZWYCIĘZCA: CLAUDE
+
+📊 Stan turnieju po 5 grach:
+   🔵 Claude:  3
+   🔴 OpenAI:  2
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 6/10 | 🔴 OPENAI zaczyna!
+Stan: Claude 3 - 2 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔴 OPENAI rozpoczyna...
+   Ruch: 5 → (2, 2)
+
+🔵 CLAUDE odpowiada...
+   Ruch: 7 → (3, 2)
+   Ruch: 4 → (3, 3)
+   Ruch: 8 → (4, 2)
+   Ruch: 8 → (2, 3)
+   Ruch: 5 → (5, 2)
+   Ruch: 6 → (1, 2)
+   Ruch: 6 → (2, 1)
+   Ruch: 3 → (2, 1)
+   Fallback: 3 → (0, 0)
+   Ruch: 9 → (5, 3)
+   Ruch: 5 → (4, 3)
+   Ruch: 6 → (3, 1)
+   Ruch: 2 → (2, 1)
+   Fallback: 1 → (1, 0)
+   Ruch: 3 → (1, 3)
+   Ruch: 2 → (0, 3)
+   Ruch: 2 → (1, 0)
+   Ruch: 7 → (0, 4)
+   Ruch: 7 → (1, 4)
+   Ruch: 6 → (1, 1)
+
+🔴 ZWYCIĘZCA: OPENAI
+
+📊 Stan turnieju po 6 grach:
+   🔵 Claude:  3
+   🔴 OpenAI:  3
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 7/10 | 🔵 CLAUDE zaczyna!
+Stan: Claude 3 - 3 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔵 CLAUDE rozpoczyna...
+   Ruch: 2 → (2, 2)
+
+🔴 OPENAI odpowiada...
+   Ruch: 3 → (2, 2)
+   Ruch: 9 → (3, 2)
+   Ruch: 5 → (2, 3)
+   Ruch: 3 → (4, 2)
+   Ruch: 3 → (2, 4)
+   Ruch: 2 → (3, 3)
+   Ruch: 4 → (4, 4)
+   Ruch: 8 → (5, 2)
+   Ruch: 6 → (3, 4)
+   Ruch: 5 → (5, 3)
+   Ruch: 8 → (4, 3)
+   Ruch: 9 → (1, 2)
+   Ruch: 8 → (3, 5)
+   Ruch: 8 → (0, 2)
+   Ruch: 1 → (5, 4)
+
+🔴 ZWYCIĘZCA: OPENAI
+
+📊 Stan turnieju po 7 grach:
+   🔵 Claude:  3
+   🔴 OpenAI:  4
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 8/10 | 🔴 OPENAI zaczyna!
+Stan: Claude 3 - 4 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔴 OPENAI rozpoczyna...
+   Ruch: 6 → (2, 2)
+
+🔵 CLAUDE odpowiada...
+   Ruch: 5 → (3, 2)
+   Ruch: 2 → (2, 1)
+   Ruch: 3 → (4, 2)
+   Ruch: 6 → (1, 1)
+   Ruch: 7 → (3, 3)
+   Ruch: 3 → (2, 3)
+   Ruch: 9 → (2, 4)
+   Ruch: 9 → (2, 3)
+   Ruch: 9 → (3, 4)
+   Ruch: 1 → (3, 3)
+   Fallback: 1 → (0, 0)
+   Ruch: 3 → (3, 5)
+
+🔵 ZWYCIĘZCA: CLAUDE
+
+📊 Stan turnieju po 8 grach:
+   🔵 Claude:  4
+   🔴 OpenAI:  4
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 9/10 | 🔵 CLAUDE zaczyna!
+Stan: Claude 4 - 4 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔵 CLAUDE rozpoczyna...
+   Ruch: 7 → (2, 2)
+
+🔴 OPENAI odpowiada...
+   Ruch: 7 → (2, 2)
+   Fallback: 7 → (0, 0)
+   Ruch: 8 → (3, 2)
+   Ruch: 5 → (1, 0)
+   Ruch: 4 → (4, 2)
+   Ruch: 3 → (2, 1)
+   Ruch: 5 → (1, 2)
+
+🔵 ZWYCIĘZCA: CLAUDE
+
+📊 Stan turnieju po 9 grach:
+   🔵 Claude:  5
+   🔴 OpenAI:  4
+
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+GRA 10/10 | 🔴 OPENAI zaczyna!
+Stan: Claude 5 - 4 OpenAI
+▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+
+🔴 OPENAI rozpoczyna...
+   Ruch: 4 → (0, 0)
+
+🔵 CLAUDE odpowiada...
+   Ruch: 6 → (1, 0)
+   Ruch: 5 → (1, 0)
+   Fallback: 1 → (2, 0)
+   Ruch: 4 → (3, 0)
+   Ruch: 8 → (4, 0)
+   Ruch: 5 → (1, 1)
+   Ruch: 5 → (5, 0)
+   Ruch: 9 → (2, 1)
+   Ruch: 3 → (1, 1)
+   Fallback: 3 → (2, 0)
+   Ruch: 4 → (1, 2)
+   Ruch: 6 → (2, 1)
+   Fallback: 2 → (0, 1)
+   Ruch: 3 → (1, 2)
+   Fallback: 3 → (0, 1)
+   Ruch: 6 → (2, 1)
+   Fallback: 6 → (0, 0)
+   Ruch: 2 → (1, 2)
+   Fallback: 1 → (3, 1)
+
+🔵 ZWYCIĘZCA: CLAUDE
+
+📊 Stan turnieju po 10 grach:
+   🔵 Claude:  6
+   🔴 OpenAI:  4
+
+======================================================================
+🏆 WYNIKI KOŃCOWE SPRAWIEDLIWEGO TURNIEJU
+======================================================================
+
+🔵 Claude:  6 wygranych (60.0%)
+🔴 OpenAI:  4 wygranych (40.0%)
+
+⚖️  ANALIZA SPRAWIEDLIWOŚCI:
+
+🔵 Claude:
+   Gdy zaczynał:  3/5 wygranych
+   Gdy był drugi: 3/5 wygranych
+
+🔴 OpenAI:
+   Gdy zaczynał:  2/5 wygranych
+   Gdy był drugi: 2/5 wygranych
+
+📊 Przewaga pierwszego gracza:
+   Pierwszy gracz wygrał: 5/10 gier (50%)
+
+======================================================================
+🎉 MISTRZ TURNIEJU: 🔵 CLAUDE!
+======================================================================

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto Arena - Wager & Win</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 PUNTO ARENA</h1>
+            <p class="subtitle">Wager MON • Play Punto • Win Big</p>
+            <nav style="margin-top: 8px;">
+                <a href="/arena" style="color: #fbbf24; text-decoration: none; margin: 0 10px; font-size: 0.9em;">Arena</a>
+                <a href="/leaderboard" style="color: #fbbf24; text-decoration: none; margin: 0 10px; font-size: 0.9em;">Leaderboard</a>
+            </nav>
+        </header>
+
+        <!-- Wallet Connection -->
+        <div id="wallet-section" class="wallet-section">
+            <button id="connect-wallet" class="btn-primary">
+                🦊 Connect MetaMask
+            </button>
+            <div id="wallet-info" style="display: none;">
+                <p>✅ Connected: <span id="wallet-address"></span></p>
+                <p>💰 Balance: <span id="wallet-balance"></span> MON</p>
+            </div>
+        </div>
+
+        <!-- Wager Setup (no nickname - wallet-only) -->
+        <div id="wager-setup" class="game-setup" style="display: none;">
+            <h2>Create Wagered Game</h2>
+
+            <div class="wager-input-section">
+                <label>Wager Amount (MON):</label>
+                <input type="number" id="wager-amount" value="0.01" min="0.001" step="0.001">
+
+                <div class="wager-info">
+                    <p>🎰 Total Pot: <strong><span id="total-pot">0.02</span> MON</strong></p>
+                    <p>🏆 Winner Gets: <strong><span id="winner-payout">0.019</span> MON</strong> (95%)</p>
+                    <p>💼 Protocol Fee: <strong><span id="protocol-fee">0.001</span> MON</strong> (5%)</p>
+                </div>
+
+                <!-- Removed nickname input - using wallet address -->
+                <button class="btn-primary" onclick="createWageredRoom()">
+                    💰 Create Room & Deposit Wager
+                </button>
+            </div>
+        </div>
+
+        <!-- Invite Section -->
+        <div id="invite-section-wager" style="display: none;" class="invite-section">
+            <h3>🔗 Invite Opponent</h3>
+            <div class="invite-box">
+                <input type="text" id="invite-link-wager" readonly>
+                <button onclick="copyInviteWager()">Copy</button>
+            </div>
+            <p class="waiting-text">⏳ Waiting for opponent to join and deposit wager...</p>
+            <div id="tx-status" class="tx-status"></div>
+        </div>
+
+        <!-- Game Area -->
+        <div id="game-area-wager" style="display: none;">
+            <div class="wager-display">
+                <h3>💰 Wager: <span id="current-wager">0</span> MON each</h3>
+                <p>Winner takes: <span id="game-winner-payout">0</span> MON</p>
+            </div>
+
+            <div class="game-info">
+                <div class="player-info">
+                    <h3 id="player1-name-wager">Player 1</h3>
+                    <p class="player-label">Your Cards:</p>
+                    <div id="player1-cards-wager" class="player-cards"></div>
+                </div>
+
+                <div class="board-section">
+                    <div id="game-board-wager" class="game-board"></div>
+                    <p id="turn-indicator-wager" class="turn-indicator">Waiting...</p>
+                    <p id="opponent-status-wager" class="status-text"></p>
+                </div>
+
+                <div class="player-info opponent-info">
+                    <h3 id="player2-name-wager">Player 2</h3>
+                    <p>Cards remaining: <span id="player2-cards-count-wager">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal-wager" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="winner-text-wager">Game Over!</h2>
+                <div id="payout-display" style="display: none;">
+                    <p>💰 Payout: <strong><span id="final-payout">0</span> MON</strong></p>
+                </div>
+                <p id="tx-link"></p>
+                <button class="btn-primary" onclick="location.reload()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/wagering.js"></script>
+    <script>
+        // Auto-join if URL contains /join/
+        const joinMatch = window.location.pathname.match(/\/join\/(.+)/);
+        if (joinMatch) {
+            window.JOIN_ROOM_ID = joinMatch[1];
+            console.log('Will auto-join room:', window.JOIN_ROOM_ID);
+        }
+    </script>
+</body>
+</html>

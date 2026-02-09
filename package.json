@@ -1,0 +1,26 @@
+{
+  "name": "punto-arena",
+  "version": "1.0.0",
+  "description": "On-chain wagering for Punto game on Monad",
+  "main": "blockchain/deploy.js",
+  "scripts": {
+    "deploy": "node blockchain/deploy.js",
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "blockchain",
+    "gaming",
+    "monad",
+    "wagering"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.10.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "hardhat": "^2.19.0"
+  }
+}

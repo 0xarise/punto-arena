@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Punto AI - Multiplayer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎮 PUNTO AI - MULTIPLAYER</h1>
+            <p class="subtitle">Challenge anyone • Real-time PvP</p>
+        </header>
+
+        <!-- Game Setup -->
+        <div id="setup-screen" class="game-setup">
+            <h2>Create or Join Game</h2>
+
+            <div class="setup-options">
+                <div class="option-card">
+                    <h3>🆚 Challenge Friend</h3>
+                    <p>Create room and send invite link</p>
+                    <input type="text" id="player-name" placeholder="Your name" value="Player1">
+                    <button class="btn-primary" onclick="createRoom('pvp')">Create Room</button>
+                </div>
+
+                <div class="option-card">
+                    <h3>🤖 vs AI</h3>
+                    <p>Play against AI model</p>
+                    <select id="ai-model-select">
+                        <option value="claude-sonnet">Claude Sonnet 4.5</option>
+                        <option value="gpt-4o">GPT-4o</option>
+                        <option value="claude-opus">Claude Opus 4.5</option>
+                    </select>
+                    <button class="btn-primary" onclick="createRoom('pve')">Start Game</button>
+                </div>
+            </div>
+
+            <!-- Invite Link (shown after create) -->
+            <div id="invite-section" style="display: none;">
+                <h3>🔗 Invite Link</h3>
+                <div class="invite-box">
+                    <input type="text" id="invite-link" readonly>
+                    <button onclick="copyInvite()">Copy</button>
+                </div>
+                <p>Waiting for opponent...</p>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div id="game-area" style="display: none;">
+            <div class="game-info">
+                <div class="player-info">
+                    <h3 id="player1-name">Player 1</h3>
+                    <div id="player1-cards" class="player-cards"></div>
+                </div>
+
+                <div class="board-section">
+                    <div id="game-board" class="game-board"></div>
+                    <p id="turn-indicator">Your turn</p>
+                </div>
+
+                <div class="player-info">
+                    <h3 id="player2-name">Player 2</h3>
+                    <p>Cards: <span id="player2-cards-count">0</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="game-over-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="winner-text">You Won!</h2>
+                <p id="payout-text" style="display: none;"></p>
+                <button class="btn-primary" onclick="rematch()">Rematch</button>
+                <button class="btn-secondary" onclick="location.reload()">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/multiplayer.js"></script>
+</body>
+</html>

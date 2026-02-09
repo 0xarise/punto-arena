@@ -1,0 +1,234 @@
+
+╔═══════════════════════════════════════════════════════════════╗
+║                                                               ║
+║          🔥 $10,000 PUNTO AI TOURNAMENT 🔥                    ║
+║                                                               ║
+║              Claude Opus 4.5  vs  OpenAI o1                   ║
+║                                                               ║
+║                   WINNER TAKES ALL                            ║
+║                                                               ║
+╚═══════════════════════════════════════════════════════════════╝
+    
+🎮 Initializing ULTIMATE SHOWDOWN...
+💰 Prize: $10,000 - WINNER TAKES ALL
+🏆 Format: First to 2 wins
+
+✅ Claude Opus 4.5 ready
+✅ OpenAI o1 ready
+
+======================================================================
+🔥 $10,000 ULTIMATE SHOWDOWN - START! 🔥
+======================================================================
+
+
+██████████████████████████████████████████████████████████████████████
+GAME 1
+Standing: Claude 0-0 OpenAI
+██████████████████████████████████████████████████████████████████████
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 5 → (2, 2)
+  🧠 Center-adjacent position (2,2) maximizes winning line potential - it participates in multiple horizo...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 4 → (2, 3)
+  🧠 Placing the higher card in a central location maximizes potential lines of attack and doesn't waste ...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 7/10
+  ♟️  Move: 2 → (3, 2)
+  🧠 Playing at (3,2) extends my line horizontally from C5, creating a foundation for a horizontal 4-in-a...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 1 → (1, 2)
+  🧠 It blocks most of their horizontal threats in row 2 while positioning our piece diagonally with O4 a...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 6 → (4, 2)
+  🧠 This move extends my horizontal line on row 2 to three cards (positions 2,3,4), creating immediate p...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 7 → (2, 2)
+  🧠 By placing our 7 on (2,2), we ensure the opponent cannot complete their row-2 sequence next turn, re...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 7/10
+  ♟️  Move: 9 → (5, 2)
+  🧠 Playing 9 at (5,2) gives me three cards in a horizontal row (C2 at col 3, C6 at col 4, now C9 at col...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 6 → (3, 2)
+  🧠 Placing 6 on (3,2) gives us a strong three-in-a-row in row 2 and a simple follow-up for four in a ro...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 7 → (3, 2)
+  🧠 By playing my 7 on opponent's 6 at (3,2), I create three consecutive cards in row 2: positions (3,2)...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 2 → (2, 1)
+  🧠 Placing the card 2 at (2,1) sets up an unavoidable vertical connect in column 2. On the next turn, w...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 10/10
+  ♟️  Move: 8 → (2, 2)
+  🧠 Playing 8 at (2,2) overrides opponent's O7, completing my horizontal 4-in-a-row: C8(2,2)-C7(3,2)-C6(...
+
+🔵 CLAUDE WINS GAME 1!
+
+📊 SCORE: Claude 1-0 OpenAI
+💰 Cost so far: $1.8246
+
+██████████████████████████████████████████████████████████████████████
+GAME 2
+Standing: Claude 1-0 OpenAI
+🚨 CLAUDE MATCH POINT!
+██████████████████████████████████████████████████████████████████████
+
+  OpenAI o1 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 4 → (2, 2)
+  🧠 A central location with our strongest card yields the highest chance to form multiple winning lines ...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 7/10
+  ♟️  Move: 2 → (3, 2)
+  🧠 Playing my 2 at (3,2) positions me horizontally adjacent to their 4, starting a potential horizontal...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 1 → (1, 2)
+  🧠 Placing the 1 at (1,2) creates a strategic adjacency with our 4 and keeps our 8 available to neutral...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 7 → (2, 2)
+  🧠 By playing my 7 on their O4 at (2,2), I override their card (7>4), disrupting their horizontal threa...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 9 → (2, 2)
+  🧠 Replacing C7 with O9 gives us two adjacent squares (1,2 & 2,2), enabling a near-term 3-in-a-row by o...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 7/10
+  ♟️  Move: 8 → (4, 2)
+  🧠 Placing the 8 at (4,2) extends my horizontal line in row 2. I now have C2 at (3,2) and will have C8 ...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 8 → (3, 2)
+  🧠 Playing 8 over C2 secures three in a row behind a high-value card, making it harder for the opponent...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 4 → (0, 2)
+  🧠 Opponent has O1-O9-O8 in row 2 (columns 1-3) which is 3 in a row. If they play at (0,2), they comple...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 10/10
+  ♟️  Move: 9 → (4, 2)
+  🧠 Overriding the C8 at (4,2) with our 9 completes a horizontal line of O’s from columns 1 to 4, securi...
+
+🔴 OPENAI WINS GAME 2!
+
+📊 SCORE: Claude 1-1 OpenAI
+💰 Cost so far: $3.1094
+
+██████████████████████████████████████████████████████████████████████
+GAME 3
+Standing: Claude 1-1 OpenAI
+🚨 CLAUDE MATCH POINT!
+🚨 OPENAI MATCH POINT!
+██████████████████████████████████████████████████████████████████████
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 3 → (2, 2)
+  🧠 Opening with a center-adjacent position (2,2) maximizes winning potential across horizontal, vertica...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 3 → (3, 3)
+  🧠 Placing the highest available card in the center creates the greatest potential for building four in...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 7 → (1, 1)
+  🧠 Placing 7 at (1,1) extends my diagonal threat from top-left to bottom-right. I now have cards at (1,...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 10/10
+  ♟️  Move: 9 → (2, 2)
+  🧠 Taking (2,2) with a 9 blocks the core diagonal and removes their immediate threat, forcing them to r...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 7/10
+  ♟️  Move: 7 → (4, 4)
+  🧠 Blocking opponent's diagonal extension at (4,4) is critical - they have O9(2,2) and O3(3,3) forming ...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 8/10
+  ♟️  Move: 1 → (3, 2)
+  🧠 This square intersects with our existing cards in both a horizontal and vertical line, maximizing fu...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 7/10
+  ♟️  Move: 8 → (3, 4)
+  🧠 Playing 8 at (3,4) creates a diagonal threat with my C7 at (4,4). This gives me pieces at (3,4) and ...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 10/10
+  ♟️  Move: 3 → (4, 2)
+  🧠 By playing the 3 at (4,2), we form three consecutive squares in row 2 (2,2), (3,2), and (4,2). The o...
+
+  Claude Opus 4.5 thinking...
+  💭 Confidence: 9/10
+  ♟️  Move: 5 → (2, 4)
+  🧠 Playing C5 at (2,4) creates three in a row horizontally on row 4: C5(2,4)-C8(3,4)-C7(4,4). This thre...
+
+  OpenAI o1 thinking...
+  💭 Confidence: 10/10
+  ♟️  Move: 5 → (5, 2)
+  🧠 Placing the 5 at (5,2) yields four in a row instantly, securing the tournament win....
+
+🔴 OPENAI WINS GAME 3!
+
+📊 SCORE: Claude 1-2 OpenAI
+💰 Cost so far: $4.6800
+
+======================================================================
+🏆 TOURNAMENT COMPLETE! 🏆
+======================================================================
+
+🔴 CHAMPION: OpenAI o1
+💰 PRIZE: $10,000 USD
+
+📊 FINAL SCORE:
+   Claude Opus 4.5: 1 wins
+   OpenAI o1:       2 wins
+
+======================================================================
+💰 TOURNAMENT COST ANALYSIS
+======================================================================
+
+🔵 Claude Opus 4.5:
+   Input:  18,358 tokens
+   Output: 5,825 tokens
+   Cost:   $0.7122
+
+🔴 OpenAI o1:
+   Input:  16,487 tokens
+   Output: 62,007 tokens
+   Cost:   $3.9677
+
+💵 TOTAL COST: $4.6800
+
+📝 Full logs saved to: ultimate_showdown_log.json

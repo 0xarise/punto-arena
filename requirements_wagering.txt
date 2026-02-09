@@ -1,0 +1,23 @@
+# Python Dependencies for Punto Arena Wagering
+
+# Core Web Framework
+flask==3.0.0
+flask-cors==4.0.0
+flask-socketio==5.3.5
+python-socketio==5.10.0
+
+# Blockchain
+web3==6.15.1
+eth-account==0.11.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# AI Models (Optional - for AI opponents)
+anthropic==0.40.0
+openai==1.12.0
+google-generativeai>=0.3.0
+
+# Production Server
+gunicorn==21.2.0
+eventlet==0.33.3
