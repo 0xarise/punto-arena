@@ -34,15 +34,19 @@ function soundOpponentMove() { playTone(587, 0.08, 'triangle', 0.12); }
 function soundYourTurn() { playTone(1047, 0.04, 'sine', 0.1); setTimeout(() => playTone(1319, 0.04, 'sine', 0.1), 50); }
 function soundInvalid() { playTone(180, 0.15, 'sawtooth', 0.12); }
 function soundWin() {
-    playTone(523, 0.12, 'sine', 0.2);
-    setTimeout(() => playTone(659, 0.12, 'sine', 0.2), 120);
-    setTimeout(() => playTone(784, 0.12, 'sine', 0.2), 240);
-    setTimeout(() => playTone(1047, 0.25, 'sine', 0.25), 360);
+    // Victory fanfare — triumphant ascending chord
+    playTone(523, 0.15, 'sine', 0.25);
+    setTimeout(() => playTone(659, 0.15, 'sine', 0.25), 100);
+    setTimeout(() => playTone(784, 0.15, 'sine', 0.25), 200);
+    setTimeout(() => { playTone(1047, 0.4, 'sine', 0.3); playTone(523, 0.4, 'sine', 0.15); }, 300);
+    setTimeout(() => playTone(1047, 0.3, 'triangle', 0.15), 600);
 }
-function soundLose() {
-    playTone(400, 0.15, 'triangle', 0.15);
-    setTimeout(() => playTone(320, 0.15, 'triangle', 0.15), 150);
-    setTimeout(() => playTone(260, 0.3, 'triangle', 0.15), 300);
+function soundRekt() {
+    // REKT — heavy bass drop + distorted descend
+    playTone(80, 0.5, 'sawtooth', 0.3);
+    playTone(120, 0.4, 'square', 0.15);
+    setTimeout(() => playTone(60, 0.6, 'sawtooth', 0.25), 200);
+    setTimeout(() => playTone(40, 0.8, 'sawtooth', 0.2), 500);
 }
 
 let provider, signer, contract, walletAddress;
@@ -917,8 +921,9 @@ function showGameOver(data) {
 
     if (didIWin) {
         soundWin();
-        winnerText.innerHTML = gameState.mode === 'ai' ? '🎉 YOU BEAT THE AI!' : '🎉 YOU WON!';
-        winnerText.style.color = '#10b981';
+        winnerText.innerHTML = 'VICTORY';
+        winnerText.style.cssText = 'font-family: Orbitron, monospace; font-size: 48px; font-weight: 900; letter-spacing: 6px; color: #fbbf24; text-shadow: 0 0 30px rgba(251,191,36,0.6), 0 0 60px rgba(251,191,36,0.3); animation: victory-glow 1.5s ease-in-out infinite;';
+        modal.style.background = 'rgba(0, 0, 0, 0.85)';
 
         if (gameState.mode !== 'ai' && gameState.wager > 0) {
             const payout = gameState.wager * 2 * 0.95;
@@ -928,9 +933,10 @@ function showGameOver(data) {
             document.getElementById('payout-display').style.display = 'none';
         }
     } else {
-        soundLose();
-        winnerText.innerHTML = gameState.mode === 'ai' ? '😔 AI Wins' : '😔 You Lost';
-        winnerText.style.color = '#ef4444';
+        soundRekt();
+        winnerText.innerHTML = 'REKT';
+        winnerText.style.cssText = 'font-family: Orbitron, monospace; font-size: 64px; font-weight: 900; letter-spacing: 8px; color: #ef4444; text-shadow: 0 0 40px rgba(239,68,68,0.8), 0 0 80px rgba(239,68,68,0.4); animation: rekt-shake 0.5s ease-in-out;';
+        modal.style.background = 'rgba(40, 0, 0, 0.92)';
         document.getElementById('payout-display').style.display = 'none';
     }
 

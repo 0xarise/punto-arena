@@ -586,6 +586,21 @@
             animation: board-shake 0.4s ease;
         }
 
+        /* VICTORY glow animation */
+        @keyframes victory-glow {
+            0%, 100% { text-shadow: 0 0 30px rgba(251,191,36,0.6), 0 0 60px rgba(251,191,36,0.3); }
+            50% { text-shadow: 0 0 50px rgba(251,191,36,0.9), 0 0 100px rgba(251,191,36,0.5), 0 0 150px rgba(251,191,36,0.2); }
+        }
+
+        /* REKT shake animation */
+        @keyframes rekt-shake {
+            0% { transform: scale(0.3) rotate(-5deg); opacity: 0; }
+            40% { transform: scale(1.3) rotate(3deg); opacity: 1; }
+            60% { transform: scale(0.95) rotate(-2deg); }
+            80% { transform: scale(1.05) rotate(1deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
         /* Difficulty selector buttons */
         .btn-diff {
             display: flex;
