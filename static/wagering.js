@@ -13,7 +13,8 @@ let gameState = {
     opponentAddress: null,
     boardState: null,
     myCards: [],
-    status: 'idle' // idle, waiting, playing, finished
+    status: 'idle', // idle, waiting, playing, finished
+    mode: null // 'pvp' or 'ai'
 };
 
 const SESSION_KEY = 'punto_wager_session';
@@ -189,7 +190,7 @@ async function connectWallet() {
 
         document.getElementById('connect-wallet').style.display = 'none';
         document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('wager-setup').style.display = 'block';
+        document.getElementById('mode-selection').style.display = 'block';
 
         // Initialize contract
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -238,6 +239,27 @@ if (typeof window.ethereum !== 'undefined') {
 // ============================================================================
 // LOADING SPINNER
 // ============================================================================
+
+function showToast(message) {
+    // Shake the board
+    const board = document.getElementById('game-board-wager');
+    if (board) {
+        board.classList.add('shake');
+        setTimeout(() => board.classList.remove('shake'), 400);
+    }
+
+    // Show toast
+    let toast = document.getElementById('game-toast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'game-toast';
+        toast.className = 'toast';
+        document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
 
 function showLoading(message = 'Loading...') {
     let loader = document.getElementById('loading-overlay');
@@ -466,7 +488,7 @@ function copyInviteWager() {
 function initializeSocket() {
     if (socket && socket.connected) return;
     
-    socket = io('http://127.0.0.1:8000', {
+    socket = io(window.location.origin, {
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000
@@ -513,16 +535,28 @@ function initializeSocket() {
         }
     });
 
+    socket.on('ai_room_created', (data) => {
+        console.log('🤖 AI room created:', data);
+        gameState.roomId = data.room_id;
+        gameState.mode = 'ai';
+        gameState.playerRole = 'player1';
+        gameState.status = 'playing';
+        saveSession();
+    });
+
     socket.on('game_start', (data) => {
         console.log('🎮 Game starting:', data);
         hideLoading();
-        
-        if (data.wager) {
+
+        if (data.mode) {
+            gameState.mode = data.mode;
+        }
+        if (data.wager !== undefined) {
             gameState.wager = data.wager;
         }
         gameState.status = 'playing';
         saveSession();
-        
+
         startGameUI(data);
     });
 
@@ -570,7 +604,7 @@ function initializeSocket() {
     socket.on('error', (data) => {
         hideLoading();
         console.error('Socket error:', data);
-        alert('Error: ' + data.message);
+        showToast(data.message);
     });
 }
 
@@ -581,13 +615,19 @@ function initializeSocket() {
 function startGameUI(data) {
     document.getElementById('invite-section-wager').style.display = 'none';
     document.getElementById('wager-setup').style.display = 'none';
+    document.getElementById('mode-selection').style.display = 'none';
     document.getElementById('game-area-wager').style.display = 'block';
 
-    // Update wager display
-    gameState.wager = data.wager || gameState.wager;
-    document.getElementById('current-wager').textContent = gameState.wager;
-    const payout = gameState.wager * 2 * 0.95;
-    document.getElementById('game-winner-payout').textContent = payout.toFixed(4);
+    // Update wager display — hide in AI mode
+    const wagerDisplay = document.querySelector('.wager-display');
+    if (gameState.mode === 'ai') {
+        if (wagerDisplay) wagerDisplay.innerHTML = '<h3><span class="ai-mode-badge">vs AI</span></h3><p>Practice mode — no wager</p>';
+    } else {
+        gameState.wager = data.wager || gameState.wager;
+        document.getElementById('current-wager').textContent = gameState.wager;
+        const payout = gameState.wager * 2 * 0.95;
+        document.getElementById('game-winner-payout').textContent = payout.toFixed(4);
+    }
 
     // Set player names (use wallet addresses)
     const p1Name = data.player1.name;
@@ -693,13 +733,18 @@ function handleCellClick(row, col) {
     }
 
     // Send card_value + card_color (selectedCard is now {value, color} dict)
-    socket.emit('make_move', {
+    const moveEvent = gameState.mode === 'ai' ? 'ai_make_move' : 'make_move';
+    const movePayload = {
         card: gameState.selectedCard.value,
         card_value: gameState.selectedCard.value,
         card_color: gameState.selectedCard.color,
         row: row,
         col: col
-    });
+    };
+    if (gameState.mode === 'ai') {
+        movePayload.room_id = gameState.roomId;
+    }
+    socket.emit(moveEvent, movePayload);
 
     gameState.selectedCard = null;
     gameState.myTurn = false;
@@ -797,14 +842,18 @@ function showGameOver(data) {
     const didIWin = (data.winner === gameState.playerRole);
 
     if (didIWin) {
-        winnerText.innerHTML = '🎉 YOU WON!';
+        winnerText.innerHTML = gameState.mode === 'ai' ? '🎉 YOU BEAT THE AI!' : '🎉 YOU WON!';
         winnerText.style.color = '#10b981';
-        
-        const payout = gameState.wager * 2 * 0.95;
-        document.getElementById('final-payout').textContent = payout.toFixed(4);
-        document.getElementById('payout-display').style.display = 'block';
+
+        if (gameState.mode !== 'ai' && gameState.wager > 0) {
+            const payout = gameState.wager * 2 * 0.95;
+            document.getElementById('final-payout').textContent = payout.toFixed(4);
+            document.getElementById('payout-display').style.display = 'block';
+        } else {
+            document.getElementById('payout-display').style.display = 'none';
+        }
     } else {
-        winnerText.innerHTML = '😔 You Lost';
+        winnerText.innerHTML = gameState.mode === 'ai' ? '😔 AI Wins' : '😔 You Lost';
         winnerText.style.color = '#ef4444';
         document.getElementById('payout-display').style.display = 'none';
     }
@@ -815,6 +864,23 @@ function showGameOver(data) {
     modal.style.display = 'flex';
 }
 
+// ============================================================================
+// MODE SELECTION
+// ============================================================================
+
+function selectMode(mode) {
+    gameState.mode = mode;
+    document.getElementById('mode-selection').style.display = 'none';
+
+    if (mode === 'pvp') {
+        document.getElementById('wager-setup').style.display = 'block';
+    } else if (mode === 'ai') {
+        showLoading('Starting AI game...');
+        socket.emit('create_ai_room', { wallet_address: walletAddress });
+    }
+}
+
 // Expose functions to global scope for HTML onclick handlers
 window.createWageredRoom = createWageredRoom;
 window.copyInviteWager = copyInviteWager;
+window.selectMode = selectMode;

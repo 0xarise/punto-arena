@@ -860,9 +860,9 @@
         <div class="subtitle">Spectator Mode</div>
         <div id="live-badge" class="live-badge" style="display: none;">LIVE</div>
         <div style="margin-top: 8px;">
-            <a href="/arena" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Arena</a>
+            <a href="/" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Home</a>
+            <a href="/play" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Play</a>
             <a href="/leaderboard" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Leaderboard</a>
-            <a href="/" style="color: var(--accent); text-decoration: none; margin: 0 10px; font-size: 0.85em;">Wager</a>
         </div>
     </div>
 
@@ -891,6 +891,9 @@
         <div class="waiting-spinner"></div>
         <h2 style="margin-top: 24px;">Waiting for match...</h2>
         <p>The game will appear here once it begins.</p>
+        <button id="start-ai-match-btn" onclick="startAIMatchFromSpectate()" style="margin-top: 20px; font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 12px 28px; border: 1px solid #fbbf24; border-radius: 6px; background: rgba(251, 191, 36, 0.1); color: #fbbf24; cursor: pointer; transition: all 0.2s;">
+            Start AI vs AI Match
+        </button>
     </div>
 
     <!-- Main Spectator Layout (hidden until game starts) -->
@@ -962,5 +965,27 @@
     </div>
 
     <script src="/static/spectator.js"></script>
+    <script>
+        async function startAIMatchFromSpectate() {
+            const btn = document.getElementById('start-ai-match-btn');
+            btn.textContent = 'Starting...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/arena/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ engine1: 'heuristic', engine2: 'heuristic', wager: '0.01' })
+                });
+                const data = await res.json();
+                if (data.room_id) {
+                    window.location.href = '/spectate/' + data.room_id;
+                }
+            } catch (err) {
+                console.error('Failed to start AI match:', err);
+                btn.textContent = 'Start AI vs AI Match';
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>

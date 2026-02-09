@@ -485,6 +485,121 @@
             box-shadow: 0 0 8px var(--player2-glow);
         }
 
+        /* Card color classes */
+        .card.color-red { background: rgba(231, 76, 60, 0.3); border-color: #e74c3c; color: #e74c3c; }
+        .card.color-blue { background: rgba(52, 152, 219, 0.3); border-color: #3498db; color: #3498db; }
+        .card.color-green { background: rgba(46, 204, 113, 0.3); border-color: #2ecc71; color: #2ecc71; }
+        .card.color-yellow { background: rgba(241, 196, 15, 0.3); border-color: #f1c40f; color: #f1c40f; }
+
+        .card {
+            width: 40px;
+            height: 52px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 16px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            transition: all 0.15s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .card.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+            transform: translateY(-5px);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .card.shake { animation: shake 0.3s ease; }
+
+        /* Board cell color classes */
+        .game-board .cell.color-red { background: rgba(231, 76, 60, 0.25); border-color: #e74c3c; color: #e74c3c; }
+        .game-board .cell.color-blue { background: rgba(52, 152, 219, 0.25); border-color: #3498db; color: #3498db; }
+        .game-board .cell.color-green { background: rgba(46, 204, 113, 0.25); border-color: #2ecc71; color: #2ecc71; }
+        .game-board .cell.color-yellow { background: rgba(241, 196, 15, 0.25); border-color: #f1c40f; color: #f1c40f; }
+
+        /* Pulse name animation for turn indicator */
+        @keyframes pulse-name-anim {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .pulse-name {
+            animation: pulse-name-anim 1.5s ease-in-out infinite;
+        }
+
+        .turn-indicator.my-turn {
+            animation: pulse-name-anim 1.5s ease-in-out infinite;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(239, 68, 68, 0.95);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Board shake */
+        @keyframes board-shake {
+            0%, 100% { transform: translateX(0); }
+            15% { transform: translateX(-6px); }
+            30% { transform: translateX(5px); }
+            45% { transform: translateX(-4px); }
+            60% { transform: translateX(3px); }
+            75% { transform: translateX(-2px); }
+        }
+
+        .game-board.shake {
+            animation: board-shake 0.4s ease;
+        }
+
+        /* AI mode indicator */
+        .ai-mode-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 4px;
+            color: var(--player1);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
         /* ---- MODAL ---- */
         .modal {
             position: fixed;
@@ -531,6 +646,68 @@
 
         .modal-content .btn-primary {
             margin-top: 24px;
+        }
+
+        /* ---- HOW TO PLAY PANEL ---- */
+        .how-to-play-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            padding: 6px 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 16px;
+        }
+
+        .how-to-play-toggle:hover {
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+
+        .how-to-play-panel {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out;
+            margin-bottom: 0;
+        }
+
+        .how-to-play-panel.open {
+            max-height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .how-to-play-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 20px 24px;
+        }
+
+        .how-to-play-content h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .how-to-play-content p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .how-to-play-content strong {
+            color: var(--text-primary);
         }
 
         /* ---- FOOTER ---- */
@@ -647,11 +824,11 @@
 
     <!-- Navigation -->
     <nav class="nav-bar">
-        <a href="/arena" class="nav-link">Arena</a>
+        <a href="/" class="nav-link">Home</a>
+        <span class="nav-separator">/</span>
+        <a href="/play" class="nav-link active">Play</a>
         <span class="nav-separator">/</span>
         <a href="/spectate" class="nav-link">Spectate</a>
-        <span class="nav-separator">/</span>
-        <a href="/" class="nav-link active">Wagering</a>
         <span class="nav-separator">/</span>
         <a href="/leaderboard" class="nav-link">Leaderboard</a>
     </nav>
@@ -663,6 +840,22 @@
     </header>
 
     <div class="content">
+        <!-- How to Play -->
+        <div style="text-align: center;">
+            <button class="how-to-play-toggle" onclick="document.getElementById('htp-panel').classList.toggle('open'); this.querySelector('.htp-arrow').textContent = document.getElementById('htp-panel').classList.contains('open') ? '\u25B2' : '\u25BC';">
+                <span>How to Play</span>
+                <span class="htp-arrow">&#x25BC;</span>
+            </button>
+        </div>
+        <div id="htp-panel" class="how-to-play-panel">
+            <div class="how-to-play-content">
+                <h3>Quick Rules</h3>
+                <p><strong>Goal:</strong> Place 5 matching-color cards in a row, column, or diagonal on the 6x6 board.</p>
+                <p><strong>Cards:</strong> 4 colors (red, blue, green, yellow), values 1&ndash;9. You can overwrite an opponent's card with a higher value on adjacent cells.</p>
+                <p><strong>Wagering:</strong> Both players deposit MON into a smart contract escrow. Winner gets 95% of the pot. 30-min refund timeout if opponent never joins.</p>
+            </div>
+        </div>
+
         <!-- Wallet Connection -->
         <div id="wallet-section" class="wallet-section">
             <button id="connect-wallet" class="btn-primary">
@@ -671,6 +864,21 @@
             <div id="wallet-info" class="wallet-info" style="display: none;">
                 <p>Connected: <span id="wallet-address"></span></p>
                 <p>Balance: <span id="wallet-balance"></span> MON</p>
+            </div>
+        </div>
+
+        <!-- Mode Selection (shown after wallet connect) -->
+        <div id="mode-selection" class="game-setup" style="display: none;">
+            <h2>Choose Mode</h2>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn-primary" onclick="selectMode('pvp')" style="flex: 1; min-width: 200px; max-width: 280px;">
+                    PvP Mode
+                    <br><span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.7;">Wager MON & play a friend</span>
+                </button>
+                <button class="btn-primary" onclick="selectMode('ai')" style="flex: 1; min-width: 200px; max-width: 280px; border-color: var(--player1); color: var(--player1); background: rgba(74, 158, 255, 0.1);">
+                    vs AI
+                    <br><span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; opacity: 0.7;">Practice against the AI (no wager)</span>
+                </button>
             </div>
         </div>
 

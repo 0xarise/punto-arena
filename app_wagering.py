@@ -18,6 +18,7 @@ import random
 import time
 
 from game_logic import PuntoGame
+from hackathon_matches import heuristic_move, valid_moves as hm_valid_moves
 from blockchain.wagering import get_blockchain
 import evidence_logger
 import elo
@@ -58,7 +59,12 @@ last_move_time = {}  # sid -> timestamp for rate limiting
 
 @app.route('/')
 def index():
-    """Main wagering page"""
+    """Landing page"""
+    return render_template('landing.html')
+
+@app.route('/play')
+def play():
+    """Wagering game page"""
     return render_template('wagering.html')
 
 @app.route('/join/<room_id>')
@@ -89,7 +95,7 @@ def create_wagered_room():
         'blockchain_game_id': None  # Will be set when player1 creates on-chain
     }
 
-    invite_link = f"http://127.0.0.1:8000/join/{room_id}"
+    invite_link = f"{request.host_url.rstrip('/')}/join/{room_id}"
 
     print(f"✅ Room created: {room_id}")
     print(f"   Invite: {invite_link}")
@@ -123,6 +129,13 @@ def leaderboard():
 def api_leaderboard():
     """JSON endpoint for leaderboard data"""
     rankings = elo.compute_rankings()
+    return jsonify(rankings)
+
+@app.route('/api/wallet-rankings')
+def api_wallet_rankings():
+    """JSON endpoint for wallet-based player rankings"""
+    import wallet_elo
+    rankings = wallet_elo.get_wallet_rankings()
     return jsonify(rankings)
 
 # ============================================================================
@@ -171,7 +184,7 @@ def start_arena_match():
     )
     thread.start()
 
-    spectator_url = f"http://127.0.0.1:8000/spectate/{room_id}"
+    spectator_url = f"{request.host_url.rstrip('/')}/spectate/{room_id}"
     print(f"🏟️ Arena match started: {room_id}")
     print(f"   Spectate: {spectator_url}")
 
@@ -675,6 +688,236 @@ def handle_get_game_state(data):
         })
         emit('game_state_restored', current_state)
 
+# ============================================================================
+# VS AI HANDLERS
+# ============================================================================
+
+@socketio.on('create_ai_room')
+def handle_create_ai_room(data):
+    """Create a room for human vs AI (no wager, no blockchain)"""
+    wallet_address = data.get('wallet_address', 'anonymous')
+    sid = request.sid
+
+    room_id = f"ai_{secrets.token_hex(4)}"
+    game = PuntoGame()
+
+    first_player = random.choice(['player1', 'player2'])
+
+    rooms[room_id] = {
+        'id': room_id,
+        'mode': 'ai',
+        'game': game,
+        'players': {
+            sid: {
+                'sid': sid,
+                'name': truncateAddress(wallet_address),
+                'role': 'player1',
+                'address': wallet_address,
+                'connected': True
+            }
+        },
+        'ai_side': 'openai',
+        'wager': 0,
+        'status': 'playing',
+        'created': datetime.now().isoformat(),
+        'winner': None,
+        'current_turn': first_player,
+    }
+
+    players[sid] = {
+        'room_id': room_id,
+        'name': truncateAddress(wallet_address),
+        'role': 'player1',
+        'address': wallet_address
+    }
+
+    join_room(room_id)
+
+    game_state = {
+        'status': 'playing',
+        'board': format_board(game.board),
+        'player1': {
+            'name': truncateAddress(wallet_address),
+            'cards': sorted(game.hand_claude, key=lambda c: c['value'], reverse=True)
+        },
+        'player2': {
+            'name': 'AI (Heuristic)',
+            'cards': sorted(game.hand_openai, key=lambda c: c['value'], reverse=True)
+        },
+        'current_turn': first_player,
+        'wager': 0,
+        'mode': 'ai',
+        'your_role': 'player1',
+        'your_cards': sorted(game.hand_claude, key=lambda c: c['value'], reverse=True)
+    }
+
+    print(f"🤖 AI room created: {room_id} | First turn: {first_player}")
+    emit('ai_room_created', {'room_id': room_id, 'game_state': game_state})
+    emit('game_start', game_state)
+
+    # If AI goes first, make its move after a short delay
+    if first_player == 'player2':
+        _ai_respond(room_id)
+
+
+@socketio.on('ai_make_move')
+def handle_ai_make_move(data):
+    """Handle human move in AI game, then AI responds"""
+    sid = request.sid
+    room_id = data.get('room_id')
+
+    if not room_id or room_id not in rooms:
+        emit('error', {'message': 'Room not found'})
+        return
+
+    room = rooms[room_id]
+    if room.get('mode') != 'ai':
+        emit('error', {'message': 'Not an AI room'})
+        return
+
+    game = room['game']
+
+    # Turn enforcement
+    if room.get('current_turn') != 'player1':
+        emit('error', {'message': 'Not your turn'})
+        return
+
+    # Rate limit
+    now = time.time()
+    if sid in last_move_time and (now - last_move_time[sid]) < 0.5:
+        emit('error', {'message': 'Too fast, wait a moment'})
+        return
+    last_move_time[sid] = now
+
+    row = data['row']
+    col = data['col']
+    if 'card_color' in data:
+        card = {'value': data['card_value'], 'color': data['card_color']}
+    else:
+        card = data['card']
+
+    # Validate and make human move
+    is_valid, msg = game.is_valid_move(col, row, card, 'claude')
+    if not is_valid:
+        emit('error', {'message': f'Invalid move: {msg}'})
+        return
+
+    game.make_move(col, row, card, 'claude')
+
+    # Check winner after human move
+    winner = None
+    if game.winner:
+        winner = 'player1' if game.winner == 'claude' else 'player2'
+        room['status'] = 'finished'
+        room['winner'] = winner
+
+    room['current_turn'] = 'player2'
+
+    # Broadcast human move
+    move_data = {
+        'player': 'player1',
+        'card': card,
+        'position': [row, col],
+        'board': format_board(game.board),
+        'player1_cards': sorted(game.hand_claude, key=lambda c: c['value'], reverse=True),
+        'player2_cards': sorted(game.hand_openai, key=lambda c: c['value'], reverse=True),
+        'winner': winner,
+        'next_turn': 'player2' if not winner else None
+    }
+    socketio.emit('move_made', move_data, room=room_id)
+
+    if winner:
+        _log_ai_game_result(room, winner)
+        return
+
+    # AI responds after 0.5s delay
+    _ai_respond(room_id)
+
+
+def _ai_respond(room_id):
+    """Make AI move with a slight delay for UX"""
+    def do_ai_move():
+        time.sleep(0.5)
+        room = rooms.get(room_id)
+        if not room or room['status'] != 'playing':
+            return
+
+        game = room['game']
+
+        try:
+            move = heuristic_move(game, 'openai')
+        except RuntimeError:
+            # No valid moves for AI
+            room['status'] = 'finished'
+            room['winner'] = 'player1'
+            socketio.emit('move_made', {
+                'player': 'player2',
+                'card': None,
+                'position': None,
+                'board': format_board(game.board),
+                'player1_cards': sorted(game.hand_claude, key=lambda c: c['value'], reverse=True),
+                'player2_cards': sorted(game.hand_openai, key=lambda c: c['value'], reverse=True),
+                'winner': 'player1',
+                'next_turn': None
+            }, room=room_id)
+            _log_ai_game_result(room, 'player1')
+            return
+
+        game.make_move(move['x'], move['y'], move['card'], 'openai')
+
+        winner = None
+        if game.winner:
+            winner = 'player1' if game.winner == 'claude' else 'player2'
+            room['status'] = 'finished'
+            room['winner'] = winner
+
+        room['current_turn'] = 'player1'
+
+        move_data = {
+            'player': 'player2',
+            'card': move['card'],
+            'position': [move['y'], move['x']],
+            'board': format_board(game.board),
+            'player1_cards': sorted(game.hand_claude, key=lambda c: c['value'], reverse=True),
+            'player2_cards': sorted(game.hand_openai, key=lambda c: c['value'], reverse=True),
+            'winner': winner,
+            'next_turn': 'player1' if not winner else None
+        }
+        socketio.emit('move_made', move_data, room=room_id)
+
+        if winner:
+            _log_ai_game_result(room, winner)
+
+    thread = threading.Thread(target=do_ai_move, daemon=True)
+    thread.start()
+
+
+def _log_ai_game_result(room, winner):
+    """Log wallet ELO after AI game ends"""
+    try:
+        import wallet_elo
+        wallet = None
+        for pdata in room['players'].values():
+            if pdata.get('address'):
+                wallet = pdata['address']
+                break
+        if wallet:
+            if winner == 'player1':
+                wallet_elo.update_wallet_elo(wallet, 'AI_HEURISTIC', 'win')
+            else:
+                wallet_elo.update_wallet_elo('AI_HEURISTIC', wallet, 'win')
+            print(f"📊 Wallet ELO updated: {wallet} {'won' if winner == 'player1' else 'lost'} vs AI")
+    except Exception as e:
+        print(f"⚠️ Wallet ELO update failed: {e}")
+
+
+def truncateAddress(address):
+    """Truncate wallet address for display"""
+    if not address or len(address) < 10:
+        return address or 'Unknown'
+    return address[:6] + '...' + address[-4:]
+
+
 @socketio.on('disconnect')
 def handle_disconnect():
     sid = request.sid
@@ -836,6 +1079,17 @@ def handle_make_move_wagered(data):
 
                     if tx_hash:
                         print(f"✅ Result submitted! TX: {tx_hash}")
+
+            # Log wallet ELO for PvP
+            try:
+                import wallet_elo
+                winner_addr = room['players'][sid]['address'] if winner == player_role else \
+                    [p['address'] for p in room['players'].values() if p['role'] != player_role][0]
+                loser_addr = [p['address'] for p in room['players'].values() if p['address'].lower() != winner_addr.lower()][0]
+                wallet_elo.update_wallet_elo(winner_addr, loser_addr, 'win')
+                print(f"📊 PvP Wallet ELO: {winner_addr[:10]}... won vs {loser_addr[:10]}...")
+            except Exception as elo_err:
+                print(f"⚠️ PvP Wallet ELO update failed: {elo_err}")
 
         # Update turn
         next_turn = 'player2' if player_role == 'player1' else 'player1'

@@ -608,36 +608,77 @@
                 display: none;
             }
         }
+
+        /* Tab styles */
+        .lb-tab {
+            font-family: 'Orbitron', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 10px 28px;
+            border: 1px solid var(--border-subtle);
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .lb-tab:first-child {
+            border-radius: 6px 0 0 6px;
+        }
+
+        .lb-tab:last-child {
+            border-radius: 0 6px 6px 0;
+            border-left: none;
+        }
+
+        .lb-tab.active {
+            background: rgba(251, 191, 36, 0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .lb-tab:hover:not(.active) {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
     </style>
 </head>
 <body>
 
     <!-- Navigation -->
     <nav class="nav-bar">
-        <a href="/arena" class="nav-link">Arena</a>
+        <a href="/" class="nav-link">Home</a>
+        <span class="nav-separator">/</span>
+        <a href="/play" class="nav-link">Play</a>
         <span class="nav-separator">/</span>
         <a href="/spectate" class="nav-link">Spectate</a>
-        <span class="nav-separator">/</span>
-        <a href="/" class="nav-link">Wagering</a>
         <span class="nav-separator">/</span>
         <a href="/leaderboard" class="nav-link active">Leaderboard</a>
     </nav>
 
     <!-- Header -->
     <header class="header">
-        <h1 class="header-title">Punto Arena Leaderboard</h1>
-        <p class="header-subtitle">AI Agent ELO Rankings</p>
+        <h1 class="header-title">Punto Arena</h1>
+        <p class="header-subtitle">ELO Rankings</p>
         <div class="live-indicator">
             <span class="live-dot"></span>
             Live
         </div>
     </header>
 
-    <!-- Leaderboard Table -->
-    <div class="table-container">
+    <!-- Tab Navigation -->
+    <div style="display: flex; justify-content: center; gap: 0; margin: 0 auto 0; max-width: 800px; padding: 0 20px;">
+        <button id="tab-agents" class="lb-tab active" onclick="switchTab('agents')">AI Agents</button>
+        <button id="tab-players" class="lb-tab" onclick="switchTab('players')">Players</button>
+    </div>
+
+    <!-- AI Agents Table -->
+    <div id="agents-section" class="table-container">
         <div class="table-card">
             <div class="table-header-bar">
-                <h2>Rankings</h2>
+                <h2>AI Agent Rankings</h2>
                 <span class="last-updated" id="lastUpdated">Updating...</span>
             </div>
 
@@ -645,6 +686,23 @@
                 <div class="loading-state">
                     <div class="spinner"></div>
                     <p>Loading rankings...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Players Table -->
+    <div id="players-section" class="table-container" style="display: none;">
+        <div class="table-card">
+            <div class="table-header-bar">
+                <h2>Player Rankings</h2>
+                <span class="last-updated" id="lastUpdatedPlayers">Updating...</span>
+            </div>
+
+            <div id="playersTableContent">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading player rankings...</p>
                 </div>
             </div>
         </div>
@@ -837,6 +895,101 @@
             return div.innerHTML;
         }
 
+        // ================================================================
+        // WALLET/PLAYER RANKINGS
+        // ================================================================
+
+        const WALLET_API_URL = '/api/wallet-rankings';
+        let activeTab = 'agents';
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.getElementById('tab-agents').classList.toggle('active', tab === 'agents');
+            document.getElementById('tab-players').classList.toggle('active', tab === 'players');
+            document.getElementById('agents-section').style.display = tab === 'agents' ? '' : 'none';
+            document.getElementById('players-section').style.display = tab === 'players' ? '' : 'none';
+
+            if (tab === 'players') {
+                fetchWalletRankings();
+            }
+        }
+
+        async function fetchWalletRankings() {
+            try {
+                const res = await fetch(WALLET_API_URL);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                renderPlayersTable(data);
+                const el = document.getElementById('lastUpdatedPlayers');
+                const now = new Date();
+                el.textContent = `Last updated: ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}`;
+            } catch (err) {
+                console.error('[Wallet Rankings] Fetch error:', err);
+            }
+        }
+
+        function renderPlayersTable(entries) {
+            const container = document.getElementById('playersTableContent');
+
+            if (!entries || entries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">&#9813;</div>
+                        <h3>No Games Yet</h3>
+                        <p>Player rankings will appear after someone plays a game (PvP or vs AI).</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Wallet</th>
+                            <th>ELO</th>
+                            <th>W / L</th>
+                            <th class="col-matches">Games</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            entries.forEach((entry, index) => {
+                const rank = index + 1;
+                const wallet = escapeHtml(entry.wallet || '');
+                const displayWallet = wallet.length > 10 ? wallet.slice(0, 6) + '...' + wallet.slice(-4) : wallet;
+                const elo = entry.elo || 1200;
+                const wins = entry.wins || 0;
+                const losses = entry.losses || 0;
+                const games = entry.games_played || 0;
+
+                let rankClass = 'rank-default';
+                let rowClass = '';
+                if (rank === 1) { rankClass = 'rank-1'; rowClass = 'row-gold'; }
+                else if (rank === 2) { rankClass = 'rank-2'; }
+                else if (rank === 3) { rankClass = 'rank-3'; }
+
+                html += `
+                    <tr class="${rowClass}">
+                        <td class="rank-cell ${rankClass}">#${rank}</td>
+                        <td class="agent-cell" title="${wallet}">${displayWallet}</td>
+                        <td class="elo-cell">${elo}</td>
+                        <td class="wl-cell">
+                            <span class="wins">${wins}</span>
+                            <span style="color: var(--text-muted);"> / </span>
+                            <span class="losses">${losses}</span>
+                        </td>
+                        <td class="matches-cell col-matches">${games}</td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
         // ---- INIT ----
         document.addEventListener('DOMContentLoaded', () => {
             fetchLeaderboard();
@@ -850,6 +1003,7 @@
                 refreshTimer = null;
             } else {
                 fetchLeaderboard();
+                if (activeTab === 'players') fetchWalletRankings();
                 refreshTimer = setInterval(fetchLeaderboard, REFRESH_INTERVAL);
             }
         });
