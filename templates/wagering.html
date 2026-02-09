@@ -4,33 +4,656 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Punto Arena - Wager & Win</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <style>
+        /* ================================================================
+           PUNTO ARENA - WAGERING
+           Dark esports theme (matching leaderboard/spectate)
+           ================================================================ */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d0d1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #16213e;
+            --bg-board: #0f3460;
+            --border-subtle: #2a2a4a;
+            --text-primary: #e0e0e0;
+            --text-secondary: #8888aa;
+            --text-muted: #555577;
+            --player1: #4a9eff;
+            --player1-glow: rgba(74, 158, 255, 0.4);
+            --player2: #ff4a4a;
+            --player2-glow: rgba(255, 74, 74, 0.4);
+            --accent: #fbbf24;
+            --accent-glow: rgba(251, 191, 36, 0.3);
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* Scanline overlay */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+            z-index: 9999;
+        }
+
+        /* ---- NAVIGATION ---- */
+        .nav-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 6px 16px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-link.active {
+            color: var(--accent);
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+
+        .nav-separator {
+            color: var(--text-muted);
+            font-size: 11px;
+            user-select: none;
+        }
+
+        /* ---- HEADER ---- */
+        .header {
+            text-align: center;
+            padding: 48px 20px 32px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            height: 200px;
+            background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, var(--accent) 0%, #fff 40%, var(--accent) 80%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .header-subtitle {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-secondary);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        /* ---- MAIN CONTENT ---- */
+        .content {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        /* ---- WALLET SECTION ---- */
+        .wallet-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .btn-primary {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 14px 32px;
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: rgba(251, 191, 36, 0.2);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .wallet-info {
+            margin-top: 16px;
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .wallet-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 4px 0;
+        }
+
+        .wallet-info span {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* ---- GAME SETUP CARD ---- */
+        .game-setup {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .game-setup h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .wager-input-section label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .wager-input-section input[type="number"] {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 18px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 600;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--accent);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .wager-input-section input[type="number"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        .wager-info {
+            margin: 20px 0;
+            padding: 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+        }
+
+        .wager-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 6px 0;
+        }
+
+        .wager-info strong {
+            color: var(--text-primary);
+        }
+
+        .wager-input-section .btn-primary {
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        /* ---- INVITE SECTION ---- */
+        .invite-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .invite-section h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .invite-box {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .invite-box input[type="text"] {
+            flex: 1;
+            padding: 10px 14px;
+            font-size: 13px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .invite-box button {
+            padding: 10px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 6px;
+            color: var(--player1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .invite-box button:hover {
+            background: rgba(74, 158, 255, 0.2);
+        }
+
+        .waiting-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            animation: pulse-text 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-text {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .tx-status {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* ---- WAGER DISPLAY (in-game) ---- */
+        .wager-display {
+            text-align: center;
+            padding: 16px;
+            margin-bottom: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+        }
+
+        .wager-display h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 1px;
+        }
+
+        .wager-display p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* ---- GAME AREA ---- */
+        .game-info {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .player-info {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 16px;
+            min-width: 140px;
+            text-align: center;
+        }
+
+        .player-info h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--player1);
+            margin-bottom: 8px;
+        }
+
+        .opponent-info h3 {
+            color: var(--player2);
+        }
+
+        .player-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .player-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .board-section {
+            text-align: center;
+        }
+
+        .turn-indicator {
+            font-family: 'Orbitron', monospace;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--accent);
+            margin-top: 12px;
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ---- GAME BOARD ---- */
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(6, 52px);
+            grid-template-rows: repeat(6, 52px);
+            gap: 3px;
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .game-board .cell {
+            width: 52px;
+            height: 52px;
+            background: var(--bg-board);
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .game-board .cell:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .game-board .cell.player1 {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: var(--player1);
+            color: var(--player1);
+            box-shadow: 0 0 8px var(--player1-glow);
+        }
+
+        .game-board .cell.player2 {
+            background: rgba(255, 74, 74, 0.2);
+            border-color: var(--player2);
+            color: var(--player2);
+            box-shadow: 0 0 8px var(--player2-glow);
+        }
+
+        /* ---- MODAL ---- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .modal-content h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 22px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .modal-content p {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 8px 0;
+        }
+
+        .modal-content strong {
+            color: var(--text-primary);
+        }
+
+        .modal-content .btn-primary {
+            margin-top: 24px;
+        }
+
+        /* ---- FOOTER ---- */
+        .footer {
+            text-align: center;
+            padding: 32px 20px 40px;
+            border-top: 1px solid var(--border-subtle);
+            margin-top: 20px;
+        }
+
+        .footer p {
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
+
+        .footer .monad-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-family: 'Orbitron', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 4px 12px;
+            border: 1px solid var(--border-subtle);
+            border-radius: 4px;
+        }
+
+        .footer .monad-dot {
+            width: 6px;
+            height: 6px;
+            background: #836ef9;
+            border-radius: 50%;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 22px;
+                letter-spacing: 2px;
+            }
+
+            .header-subtitle {
+                font-size: 11px;
+            }
+
+            .header {
+                padding: 32px 16px 24px;
+            }
+
+            .content {
+                padding: 0 12px 40px;
+            }
+
+            .game-setup, .invite-section {
+                padding: 20px;
+            }
+
+            .game-info {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .game-board {
+                grid-template-columns: repeat(6, 44px);
+                grid-template-rows: repeat(6, 44px);
+            }
+
+            .game-board .cell {
+                width: 44px;
+                height: 44px;
+                font-size: 15px;
+            }
+
+            .nav-bar {
+                gap: 4px;
+                padding: 10px 12px;
+                flex-wrap: wrap;
+            }
+
+            .nav-link {
+                font-size: 11px;
+                padding: 5px 10px;
+            }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>💰 PUNTO ARENA</h1>
-            <p class="subtitle">Wager MON • Play Punto • Win Big</p>
-            <nav style="margin-top: 8px;">
-                <a href="/arena" style="color: #fbbf24; text-decoration: none; margin: 0 10px; font-size: 0.9em;">Arena</a>
-                <a href="/leaderboard" style="color: #fbbf24; text-decoration: none; margin: 0 10px; font-size: 0.9em;">Leaderboard</a>
-            </nav>
-        </header>
 
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <a href="/arena" class="nav-link">Arena</a>
+        <span class="nav-separator">/</span>
+        <a href="/spectate" class="nav-link">Spectate</a>
+        <span class="nav-separator">/</span>
+        <a href="/" class="nav-link active">Wagering</a>
+        <span class="nav-separator">/</span>
+        <a href="/leaderboard" class="nav-link">Leaderboard</a>
+    </nav>
+
+    <!-- Header -->
+    <header class="header">
+        <h1 class="header-title">Punto Arena</h1>
+        <p class="header-subtitle">Wager MON &bull; Play Punto &bull; Win Big</p>
+    </header>
+
+    <div class="content">
         <!-- Wallet Connection -->
         <div id="wallet-section" class="wallet-section">
             <button id="connect-wallet" class="btn-primary">
-                🦊 Connect MetaMask
+                Connect MetaMask
             </button>
-            <div id="wallet-info" style="display: none;">
-                <p>✅ Connected: <span id="wallet-address"></span></p>
-                <p>💰 Balance: <span id="wallet-balance"></span> MON</p>
+            <div id="wallet-info" class="wallet-info" style="display: none;">
+                <p>Connected: <span id="wallet-address"></span></p>
+                <p>Balance: <span id="wallet-balance"></span> MON</p>
             </div>
         </div>
 
-        <!-- Wager Setup (no nickname - wallet-only) -->
+        <!-- Wager Setup -->
         <div id="wager-setup" class="game-setup" style="display: none;">
             <h2>Create Wagered Game</h2>
 
@@ -39,33 +662,32 @@
                 <input type="number" id="wager-amount" value="0.01" min="0.001" step="0.001">
 
                 <div class="wager-info">
-                    <p>🎰 Total Pot: <strong><span id="total-pot">0.02</span> MON</strong></p>
-                    <p>🏆 Winner Gets: <strong><span id="winner-payout">0.019</span> MON</strong> (95%)</p>
-                    <p>💼 Protocol Fee: <strong><span id="protocol-fee">0.001</span> MON</strong> (5%)</p>
+                    <p>Total Pot: <strong><span id="total-pot">0.02</span> MON</strong></p>
+                    <p>Winner Gets: <strong><span id="winner-payout">0.019</span> MON</strong> (95%)</p>
+                    <p>Protocol Fee: <strong><span id="protocol-fee">0.001</span> MON</strong> (5%)</p>
                 </div>
 
-                <!-- Removed nickname input - using wallet address -->
                 <button class="btn-primary" onclick="createWageredRoom()">
-                    💰 Create Room & Deposit Wager
+                    Create Room &amp; Deposit Wager
                 </button>
             </div>
         </div>
 
         <!-- Invite Section -->
         <div id="invite-section-wager" style="display: none;" class="invite-section">
-            <h3>🔗 Invite Opponent</h3>
+            <h3>Invite Opponent</h3>
             <div class="invite-box">
                 <input type="text" id="invite-link-wager" readonly>
                 <button onclick="copyInviteWager()">Copy</button>
             </div>
-            <p class="waiting-text">⏳ Waiting for opponent to join and deposit wager...</p>
+            <p class="waiting-text">Waiting for opponent to join and deposit wager...</p>
             <div id="tx-status" class="tx-status"></div>
         </div>
 
         <!-- Game Area -->
         <div id="game-area-wager" style="display: none;">
             <div class="wager-display">
-                <h3>💰 Wager: <span id="current-wager">0</span> MON each</h3>
+                <h3>Wager: <span id="current-wager">0</span> MON each</h3>
                 <p>Winner takes: <span id="game-winner-payout">0</span> MON</p>
             </div>
 
@@ -94,13 +716,22 @@
             <div class="modal-content">
                 <h2 id="winner-text-wager">Game Over!</h2>
                 <div id="payout-display" style="display: none;">
-                    <p>💰 Payout: <strong><span id="final-payout">0</span> MON</strong></p>
+                    <p>Payout: <strong><span id="final-payout">0</span> MON</strong></p>
                 </div>
                 <p id="tx-link"></p>
                 <button class="btn-primary" onclick="location.reload()">Play Again</button>
             </div>
         </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Powered by Punto Arena</p>
+        <div class="monad-badge">
+            <span class="monad-dot"></span>
+            Monad Mainnet
+        </div>
+    </footer>
 
     <script src="/static/wagering.js"></script>
     <script>
