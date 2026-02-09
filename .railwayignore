@@ -1,0 +1,8 @@
+node_modules/
+package.json
+package-lock.json
+hardhat.config.js
+venv/
+evidence/
+cache/
+artifacts/
