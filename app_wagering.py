@@ -260,17 +260,17 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
     rooms[room_id]['arena_match_info'] = match_info
     socketio.emit('match_info', match_info, room=room_id)
 
-    # Wait for spectator to connect (up to 30s, then proceed anyway)
+    # Brief wait for spectator (5s max, then proceed — matches run continuously)
     print(f"   🏟️ Waiting for spectator to connect to {room_id}...")
-    for _ in range(60):
+    for _ in range(10):
         if rooms.get(room_id, {}).get('spectator_connected'):
             print(f"   👁️ Spectator connected! Starting match...")
             break
         time.sleep(0.5)
     else:
-        print(f"   ⏳ No spectator after 30s, proceeding anyway...")
+        print(f"   ⏳ No spectator after 5s, proceeding anyway...")
 
-    time.sleep(1)  # Extra beat after spectator connects
+    time.sleep(0.5)
 
     # Step 1: Create game on-chain
     hm_room_id = f"arena_{room_id}_{int(time.time())}"
@@ -286,7 +286,9 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
         print(f"   🏟️ Arena game created: ID={game_id}, TX={tx_create[:20]}...")
     except Exception as e:
         print(f"   ❌ Arena create failed: {e}")
-        socketio.emit('game_end', {'winner': None, 'reason': f'Create failed: {e}'}, room=room_id)
+        fail_data = {'winner': None, 'reason': f'Create failed: {e}'}
+        rooms[room_id]['arena_result'] = fail_data
+        socketio.emit('game_end', fail_data, room=room_id)
         return
 
     try:
@@ -295,7 +297,9 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
         print(f"   🏟️ Arena game joined: TX={tx_join[:20]}...")
     except Exception as e:
         print(f"   ❌ Arena join failed: {e}")
-        socketio.emit('game_end', {'winner': None, 'reason': f'Join failed: {e}'}, room=room_id)
+        fail_data = {'winner': None, 'reason': f'Join failed: {e}'}
+        rooms[room_id]['arena_result'] = fail_data
+        socketio.emit('game_end', fail_data, room=room_id)
         return
 
     # Update match info with game_id
@@ -1236,6 +1240,17 @@ def arena_background_loop():
     while True:
         try:
             # Check if there's an active (non-finished) arena match
+            # Also kill stale matches (stuck >3 min without result)
+            now = datetime.now()
+            for rid, r in list(rooms.items()):
+                if r.get('mode') == 'arena' and not r.get('arena_result'):
+                    try:
+                        created = datetime.fromisoformat(r.get('created', ''))
+                        if (now - created).total_seconds() > 180:
+                            print(f"🏟️ Cleaning stale arena match: {rid}")
+                            r['arena_result'] = {'winner': None, 'reason': 'timeout'}
+                    except (ValueError, TypeError):
+                        pass
             active = any(
                 r.get('mode') == 'arena' and not r.get('arena_result')
                 for r in rooms.values()
