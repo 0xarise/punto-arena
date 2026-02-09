@@ -650,6 +650,11 @@ function initializeSocket() {
     socket.on('error', (data) => {
         hideLoading();
         console.error('Socket error:', data);
+        // Restore turn state if game is in progress (invalid move rejected by server)
+        if (gameState.status === 'playing') {
+            gameState.myTurn = true;
+            updateTurnIndicator();
+        }
         showToast(data.message);
     });
 }
@@ -792,7 +797,6 @@ function handleCellClick(row, col) {
         movePayload.room_id = gameState.roomId;
     }
     socket.emit(moveEvent, movePayload);
-    soundCardPlace();
 
     gameState.selectedCard = null;
     gameState.myTurn = false;
@@ -820,8 +824,10 @@ function updateGameState(data) {
     const wasMyTurn = gameState.myTurn;
     gameState.myTurn = (data.next_turn === gameState.playerRole);
 
-    // Sound: opponent moved → it's now my turn
-    if (data.player !== gameState.playerRole) {
+    // Sound feedback
+    if (data.player === gameState.playerRole) {
+        soundCardPlace();
+    } else {
         soundOpponentMove();
         if (gameState.myTurn) setTimeout(soundYourTurn, 150);
     }
