@@ -272,11 +272,12 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
 
     time.sleep(0.5)
 
-    # Step 1: Create game on-chain
+    # Step 1: Try on-chain game creation (non-blocking — play even if chain fails)
     hm_room_id = f"arena_{room_id}_{int(time.time())}"
     tx_create = None
     tx_join = None
     tx_result = None
+    game_id = None
 
     try:
         wager_wei = Web3.to_wei(wager_mon, "ether")
@@ -284,23 +285,13 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
         tx_create = receipt.transactionHash.hex()
         game_id = contract.functions.gameCounter().call()
         print(f"   🏟️ Arena game created: ID={game_id}, TX={tx_create[:20]}...")
-    except Exception as e:
-        print(f"   ❌ Arena create failed: {e}")
-        fail_data = {'winner': None, 'reason': f'Create failed: {e}'}
-        rooms[room_id]['arena_result'] = fail_data
-        socketio.emit('game_end', fail_data, room=room_id)
-        return
 
-    try:
         receipt = send_tx(wallet2, contract.functions.joinGame(game_id), wager_wei)
         tx_join = receipt.transactionHash.hex()
         print(f"   🏟️ Arena game joined: TX={tx_join[:20]}...")
     except Exception as e:
-        print(f"   ❌ Arena join failed: {e}")
-        fail_data = {'winner': None, 'reason': f'Join failed: {e}'}
-        rooms[room_id]['arena_result'] = fail_data
-        socketio.emit('game_end', fail_data, room=room_id)
-        return
+        print(f"   ⚠️ Arena chain ops failed (playing anyway): {e}")
+        # Continue — game plays off-chain, spectators still get to watch
 
     # Update match info with game_id
     socketio.emit('match_info', {
@@ -391,14 +382,17 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
     winner_num = 1 if winner_side == "claude" else 2
     winner_address = wallet1.address if winner_num == 1 else wallet2.address
 
-    # Step 3: Submit result on-chain
-    try:
-        receipt = send_tx(wallet1, contract.functions.submitResult(game_id, winner_address))
-        tx_result = receipt.transactionHash.hex()
-        print(f"   🏟️ Arena result submitted: TX={tx_result[:20]}...")
-    except Exception as e:
-        print(f"   ❌ Arena submit failed: {e}")
-        tx_result = f"failed: {e}"
+    # Step 3: Submit result on-chain (only if we have a game_id)
+    if game_id:
+        try:
+            receipt = send_tx(wallet1, contract.functions.submitResult(game_id, winner_address))
+            tx_result = receipt.transactionHash.hex()
+            print(f"   🏟️ Arena result submitted: TX={tx_result[:20]}...")
+        except Exception as e:
+            print(f"   ⚠️ Arena submit failed: {e}")
+            tx_result = f"failed: {e}"
+    else:
+        print(f"   ℹ️ No on-chain game — skipping result submission")
 
     payout = wager_mon * 2 * 0.95  # 5% fee
 

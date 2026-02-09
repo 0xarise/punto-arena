@@ -126,7 +126,7 @@ def send_tx(account, tx_func, value=0):
     )
     signed = w3.eth.account.sign_transaction(tx, account.key)
     tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-    receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+    receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
     return receipt
 
 
