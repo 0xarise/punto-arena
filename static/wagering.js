@@ -168,17 +168,8 @@ function clearSession() {
 
 document.getElementById('connect-wallet').addEventListener('click', connectWallet);
 
-// Auto-connect on page load if MetaMask is already connected
-window.addEventListener('load', async () => {
-    if (typeof window.ethereum !== 'undefined') {
-        // Check if already connected
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-            console.log('🔄 Auto-reconnecting wallet...');
-            await connectWallet();
-        }
-    }
-});
+// No auto-connect — user must explicitly click "Connect Wallet"
+// (auto-connecting is bad web3 UX practice)
 
 async function connectWallet() {
     if (typeof window.ethereum === 'undefined') {
@@ -451,9 +442,20 @@ async function createWageredRoom() {
     }
 
     try {
+        // Step 1: Check balance before doing anything
+        if (provider) {
+            const balance = await provider.getBalance(walletAddress);
+            const wagerWei = ethers.utils.parseEther(wagerAmount.toString());
+            if (balance.lt(wagerWei)) {
+                const balMon = parseFloat(ethers.utils.formatEther(balance)).toFixed(4);
+                showToast(`Insufficient balance: ${balMon} MON (need ${wagerAmount} MON)`);
+                return;
+            }
+        }
+
         showLoading('Creating game room...');
-        
-        // Step 1: Create room on server
+
+        // Step 2: Create room on server
         const response = await fetch('/api/create_wagered_room', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -467,14 +469,12 @@ async function createWageredRoom() {
         gameState.status = 'waiting';
         saveSession();
 
-        document.getElementById('invite-link-wager').value = data.invite_link;
-        document.getElementById('invite-section-wager').style.display = 'block';
         document.getElementById('wager-setup').style.display = 'none';
 
         updateTxStatus('Creating on-chain game...');
         showLoading('Confirm transaction in MetaMask...');
 
-        // Step 2: Create game on blockchain
+        // Step 3: Create game on blockchain (before showing invite link)
         if (contract) {
             const tx = await contract.createGame(data.room_id, {
                 value: ethers.utils.parseEther(wagerAmount.toString())
@@ -486,18 +486,30 @@ async function createWageredRoom() {
             await tx.wait();
 
             updateTxStatus('✅ Wager deposited! Waiting for opponent...');
-            updateOpponentStatus('Share the invite link above');
         }
+
+        // Step 4: Only show invite link AFTER successful on-chain deposit
+        document.getElementById('invite-link-wager').value = data.invite_link;
+        document.getElementById('invite-section-wager').style.display = 'block';
+        updateOpponentStatus('Share the invite link above');
 
         hideLoading();
 
-        // Step 3: Join room via WebSocket
+        // Step 5: Join room via WebSocket
         emitJoin(data.room_id);
 
     } catch (error) {
         console.error('Error creating wagered room:', error);
         hideLoading();
-        updateTxStatus('❌ Error: ' + error.message);
+        // If tx failed, clean up — show wager setup again so user can retry
+        if (gameState.status === 'waiting') {
+            document.getElementById('wager-setup').style.display = 'block';
+            document.getElementById('invite-section-wager').style.display = 'none';
+            gameState.roomId = null;
+            gameState.status = null;
+            saveSession();
+        }
+        showToast(error.reason || error.message || 'Transaction failed');
     }
 }
 

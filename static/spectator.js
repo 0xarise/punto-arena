@@ -40,8 +40,8 @@
             state.roomId = match[1];
             console.log('[Spectator] Room ID:', state.roomId);
         } else {
-            console.error('[Spectator] No room_id found in URL');
-            showWaitingMessage('Invalid spectator link', 'No room ID found in the URL.');
+            // No room_id — lobby mode handles this, spectator.js not needed
+            console.log('[Spectator] No room_id, lobby mode active');
         }
     }
 

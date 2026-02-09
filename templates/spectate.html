@@ -950,14 +950,30 @@
         </div>
     </div>
 
-    <!-- Waiting State (shown before game starts) -->
+    <!-- Match Lobby (shown on /spectate without room_id) -->
+    <div id="match-lobby" style="display: none;">
+        <div style="max-width: 700px; margin: 40px auto; padding: 0 20px;">
+            <h2 style="font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; text-align: center; margin-bottom: 8px; color: var(--accent);">Live Matches</h2>
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">AI vs AI matches run continuously. Click to spectate.</p>
+            <div id="match-list" style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="text-align: center; color: var(--text-muted); padding: 40px;">
+                    <div class="waiting-spinner" style="margin: 0 auto 16px;"></div>
+                    Loading matches...
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 24px;">
+                <button onclick="startAIMatchFromSpectate()" style="font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 12px 28px; border: 1px solid #fbbf24; border-radius: 6px; background: rgba(251, 191, 36, 0.1); color: #fbbf24; cursor: pointer; transition: all 0.2s;">
+                    Start New Match
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Waiting State (shown when watching a specific room before game starts) -->
     <div id="waiting-state" class="waiting-container">
         <div class="waiting-spinner"></div>
         <h2 style="margin-top: 24px;">Waiting for match...</h2>
         <p>The game will appear here once it begins.</p>
-        <button id="start-ai-match-btn" onclick="startAIMatchFromSpectate()" style="margin-top: 20px; font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; padding: 12px 28px; border: 1px solid #fbbf24; border-radius: 6px; background: rgba(251, 191, 36, 0.1); color: #fbbf24; cursor: pointer; transition: all 0.2s;">
-            Start AI vs AI Match
-        </button>
     </div>
 
     <!-- Main Spectator Layout (hidden until game starts) -->
@@ -1031,12 +1047,53 @@
         </div>
     </footer>
 
-    <script src="/static/spectator.js"></script>
     <script>
+        // Determine if we're on a room page or the lobby
+        const roomMatch = window.location.pathname.match(/\/spectate\/(.+)/);
+        const hasRoomId = roomMatch && roomMatch[1];
+
+        if (hasRoomId) {
+            // Room-specific spectate: show waiting state, load spectator.js
+            document.getElementById('waiting-state').style.display = 'flex';
+            document.getElementById('match-lobby').style.display = 'none';
+            const s = document.createElement('script');
+            s.src = '/static/spectator.js';
+            document.body.appendChild(s);
+        } else {
+            // Lobby mode: show match list
+            document.getElementById('waiting-state').style.display = 'none';
+            document.getElementById('match-lobby').style.display = 'block';
+            loadMatchLobby();
+            // Refresh every 5 seconds
+            setInterval(loadMatchLobby, 5000);
+        }
+
+        async function loadMatchLobby() {
+            try {
+                const res = await fetch('/api/arena/active');
+                const matches = await res.json();
+                const list = document.getElementById('match-list');
+                if (!matches.length) {
+                    list.innerHTML = '<div style="text-align:center; color: var(--text-muted); padding: 30px;">No matches yet. Starting one automatically...</div>';
+                    return;
+                }
+                list.innerHTML = matches.map(m => {
+                    const statusColor = m.status === 'playing' ? '#10b981' : m.status === 'starting' ? '#fbbf24' : '#555577';
+                    const statusLabel = m.status === 'playing' ? 'LIVE' : m.status === 'starting' ? 'STARTING' : 'FINISHED';
+                    const winnerText = m.winner ? (' — Player ' + m.winner + ' wins') : '';
+                    const isLive = m.status === 'playing' || m.status === 'starting';
+                    return `<a href="/spectate/${m.room_id}" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--bg-secondary); border: 1px solid ${isLive ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius: 10px; text-decoration: none; transition: all 0.2s; ${isLive ? 'box-shadow: 0 0 12px rgba(16,185,129,0.1);' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${isLive ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}'">
+                        <span style="background: ${statusColor}; color: white; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; text-transform: uppercase; ${m.status === 'playing' ? 'animation: live-pulse 2s ease-in-out infinite;' : ''}">${statusLabel}</span>
+                        <span style="color: var(--text-primary); font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 600; letter-spacing: 1px;">${m.engine1} vs ${m.engine2}</span>
+                        <span style="color: var(--text-muted); font-size: 12px; margin-left: auto;">${m.room_id.slice(0,12)}${winnerText}</span>
+                    </a>`;
+                }).join('');
+            } catch (err) {
+                console.error('Failed to load matches:', err);
+            }
+        }
+
         async function startAIMatchFromSpectate() {
-            const btn = document.getElementById('start-ai-match-btn');
-            btn.textContent = 'Starting...';
-            btn.disabled = true;
             try {
                 const res = await fetch('/api/arena/start', {
                     method: 'POST',
@@ -1049,8 +1106,6 @@
                 }
             } catch (err) {
                 console.error('Failed to start AI match:', err);
-                btn.textContent = 'Start AI vs AI Match';
-                btn.disabled = false;
             }
         }
     </script>

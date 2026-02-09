@@ -153,6 +153,34 @@ def arena_page():
     """Simple arena control page - start AI vs AI matches"""
     return render_template('spectate.html', room_id='')
 
+@app.route('/api/arena/active')
+def active_arena_matches():
+    """List active and recent arena matches for spectators"""
+    matches = []
+    for rid, room in rooms.items():
+        if room.get('mode') != 'arena':
+            continue
+        status = room.get('status', 'unknown')
+        info = room.get('arena_match_info', {})
+        result = room.get('arena_result')
+        matches.append({
+            'room_id': rid,
+            'status': 'finished' if result else ('playing' if room.get('arena_game') else 'starting'),
+            'engine1': info.get('agent1', {}).get('engine', room.get('arena_config', {}).get('engine1', '?')),
+            'engine2': info.get('agent2', {}).get('engine', room.get('arena_config', {}).get('engine2', '?')),
+            'winner': result.get('winner') if result else None,
+            'created': room.get('created', ''),
+        })
+    # Sort: playing first, then starting, then finished (most recent first)
+    order = {'playing': 0, 'starting': 1, 'finished': 2}
+    matches.sort(key=lambda m: (order.get(m['status'], 9), m.get('created', '')), reverse=False)
+    # For finished, reverse by created so newest first
+    playing = [m for m in matches if m['status'] in ('playing', 'starting')]
+    finished = [m for m in matches if m['status'] == 'finished']
+    finished.sort(key=lambda m: m.get('created', ''), reverse=True)
+    return jsonify(playing + finished[:20])  # Cap at 20 finished
+
+
 @app.route('/api/arena/start', methods=['POST'])
 def start_arena_match():
     """Start an AI vs AI match with spectator broadcasting"""
@@ -1198,6 +1226,62 @@ def format_board(board):
 # ============================================================================
 # MAIN
 # ============================================================================
+
+_arena_loop_started = False
+
+def arena_background_loop():
+    """Background loop: keeps at least one arena match running at all times."""
+    time.sleep(8)  # Wait for server to fully start
+    print("🏟️ Arena background loop started — matches will run continuously")
+    while True:
+        try:
+            # Check if there's an active (non-finished) arena match
+            active = any(
+                r.get('mode') == 'arena' and not r.get('arena_result')
+                for r in rooms.values()
+            )
+            if not active:
+                # Start a new heuristic vs heuristic match
+                room_id = f"arena_{secrets.token_hex(4)}"
+                rooms[room_id] = {
+                    'id': room_id,
+                    'mode': 'arena',
+                    'game': None,
+                    'players': {},
+                    'wager': 0.01,
+                    'status': 'arena_pending',
+                    'created': datetime.now().isoformat(),
+                    'winner': None,
+                    'blockchain_game_id': None,
+                    'arena_config': {'engine1': 'heuristic', 'engine2': 'heuristic'},
+                }
+                thread = threading.Thread(
+                    target=run_arena_match,
+                    args=(room_id, 'heuristic', 'heuristic', 0.01),
+                    daemon=True,
+                )
+                thread.start()
+                print(f"🏟️ Auto-started arena match: {room_id}")
+            # Check every 10 seconds
+            time.sleep(10)
+        except Exception as e:
+            print(f"❌ Arena loop error: {e}")
+            time.sleep(30)
+
+
+def start_arena_loop_once():
+    """Start the arena background loop (safe to call multiple times)."""
+    global _arena_loop_started
+    if _arena_loop_started:
+        return
+    _arena_loop_started = True
+    t = threading.Thread(target=arena_background_loop, daemon=True)
+    t.start()
+
+
+# Start arena loop at import time (works for both gunicorn and __main__)
+start_arena_loop_once()
+
 
 if __name__ == '__main__':
     print("\n" + "="*60)
