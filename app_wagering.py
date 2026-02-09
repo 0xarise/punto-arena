@@ -207,7 +207,7 @@ def start_arena_match():
     # Launch arena match in background thread
     thread = threading.Thread(
         target=run_arena_match,
-        args=(room_id, engine1, engine2, wager),
+        args=(room_id, engine1, engine2, wager, data.get('on_chain', False)),
         daemon=True,
     )
     thread.start()
@@ -225,82 +225,70 @@ def start_arena_match():
     })
 
 
-def run_arena_match(room_id, engine1, engine2, wager_mon):
-    """Background thread: run an AI vs AI match with live Socket.IO broadcasts."""
-    from hackathon_matches import (
-        MatchAgent, simulate_game_moves, send_tx, contract,
-        WAGER_AMOUNT, w3, valid_moves,
-    )
-    from web3 import Web3
-    from eth_account import Account
-
-    wallet1_key = os.getenv("WALLET1_PRIVATE_KEY") or os.getenv("ORACLE_PRIVATE_KEY")
-    wallet2_key = os.getenv("WALLET2_PRIVATE_KEY")
-
-    if not wallet1_key or not wallet2_key or not contract:
-        socketio.emit('game_end', {
-            'winner': None, 'reason': 'Missing wallet keys or contract config',
-        }, room=room_id)
-        return
-
-    wallet1 = Account.from_key(wallet1_key)
-    wallet2 = Account.from_key(wallet2_key)
+def run_arena_match(room_id, engine1, engine2, wager_mon, on_chain=False):
+    """Background thread: run an AI vs AI match with live Socket.IO broadcasts.
+    on_chain=True for official hackathon matches, False for background show matches.
+    """
+    from hackathon_matches import MatchAgent, valid_moves as hm_vm
 
     agent1 = MatchAgent("agent1", "claude", engine1)
     agent2 = MatchAgent("agent2", "openai", engine2)
 
     # Store match info for late-joining spectators
     match_info = {
-        'agent1': {'engine': engine1, 'address': wallet1.address},
-        'agent2': {'engine': engine2, 'address': wallet2.address},
-        'wager': wager_mon,
+        'agent1': {'engine': engine1, 'address': ''},
+        'agent2': {'engine': engine2, 'address': ''},
+        'wager': wager_mon if on_chain else 0,
         'room_id': room_id,
         'game_id': None,
     }
-    rooms[room_id]['arena_match_info'] = match_info
-    socketio.emit('match_info', match_info, room=room_id)
 
-    # Brief wait for spectator (5s max, then proceed — matches run continuously)
-    print(f"   🏟️ Waiting for spectator to connect to {room_id}...")
-    for _ in range(10):
-        if rooms.get(room_id, {}).get('spectator_connected'):
-            print(f"   👁️ Spectator connected! Starting match...")
-            break
-        time.sleep(0.5)
-    else:
-        print(f"   ⏳ No spectator after 5s, proceeding anyway...")
-
-    time.sleep(0.5)
-
-    # Step 1: Try on-chain game creation (non-blocking — play even if chain fails)
-    hm_room_id = f"arena_{room_id}_{int(time.time())}"
     tx_create = None
     tx_join = None
     tx_result = None
     game_id = None
 
-    try:
-        wager_wei = Web3.to_wei(wager_mon, "ether")
-        receipt = send_tx(wallet1, contract.functions.createGame(hm_room_id), wager_wei)
-        tx_create = receipt.transactionHash.hex()
-        game_id = contract.functions.gameCounter().call()
-        print(f"   🏟️ Arena game created: ID={game_id}, TX={tx_create[:20]}...")
+    # On-chain setup (only for official matches)
+    if on_chain:
+        try:
+            from hackathon_matches import send_tx, contract, w3
+            from web3 import Web3
+            from eth_account import Account
 
-        receipt = send_tx(wallet2, contract.functions.joinGame(game_id), wager_wei)
-        tx_join = receipt.transactionHash.hex()
-        print(f"   🏟️ Arena game joined: TX={tx_join[:20]}...")
-    except Exception as e:
-        print(f"   ⚠️ Arena chain ops failed (playing anyway): {e}")
-        # Continue — game plays off-chain, spectators still get to watch
+            wallet1_key = os.getenv("WALLET1_PRIVATE_KEY") or os.getenv("ORACLE_PRIVATE_KEY")
+            wallet2_key = os.getenv("WALLET2_PRIVATE_KEY")
+            if wallet1_key and wallet2_key and contract:
+                wallet1 = Account.from_key(wallet1_key)
+                wallet2 = Account.from_key(wallet2_key)
+                match_info['agent1']['address'] = wallet1.address
+                match_info['agent2']['address'] = wallet2.address
 
-    # Update match info with game_id
-    socketio.emit('match_info', {
-        'agent1': {'engine': engine1, 'address': wallet1.address},
-        'agent2': {'engine': engine2, 'address': wallet2.address},
-        'wager': wager_mon,
-        'room_id': room_id,
-        'game_id': game_id,
-    }, room=room_id)
+                hm_room_id = f"arena_{room_id}_{int(time.time())}"
+                wager_wei = Web3.to_wei(wager_mon, "ether")
+
+                receipt = send_tx(wallet1, contract.functions.createGame(hm_room_id), wager_wei)
+                tx_create = receipt.transactionHash.hex()
+                game_id = contract.functions.gameCounter().call()
+                print(f"   🏟️ Arena game created: ID={game_id}, TX={tx_create[:20]}...")
+
+                receipt = send_tx(wallet2, contract.functions.joinGame(game_id), wager_wei)
+                tx_join = receipt.transactionHash.hex()
+                print(f"   🏟️ Arena game joined: TX={tx_join[:20]}...")
+                match_info['game_id'] = game_id
+        except Exception as e:
+            print(f"   ⚠️ Arena chain ops failed: {e}")
+
+    rooms[room_id]['arena_match_info'] = match_info
+    socketio.emit('match_info', match_info, room=room_id)
+
+    # Brief wait for spectator (3s max)
+    for _ in range(6):
+        if rooms.get(room_id, {}).get('spectator_connected'):
+            print(f"   👁️ Spectator connected to {room_id}!")
+            break
+        time.sleep(0.5)
+
+    socketio.emit('match_info', match_info, room=room_id)
 
     # Step 2: Play game move-by-move with broadcasts
     game = PuntoGame()
@@ -380,19 +368,21 @@ def run_arena_match(room_id, engine1, engine2, wager_mon):
         winner_side, reason = resolve_tiebreak(game, start_side)
 
     winner_num = 1 if winner_side == "claude" else 2
-    winner_address = wallet1.address if winner_num == 1 else wallet2.address
+    winner_address = match_info.get('agent1', {}).get('address', '') if winner_num == 1 else match_info.get('agent2', {}).get('address', '')
 
-    # Step 3: Submit result on-chain (only if we have a game_id)
-    if game_id:
+    # Step 3: Submit result on-chain (only for on-chain matches)
+    if on_chain and game_id:
         try:
+            from hackathon_matches import send_tx, contract
+            from eth_account import Account
+            wallet1_key = os.getenv("WALLET1_PRIVATE_KEY") or os.getenv("ORACLE_PRIVATE_KEY")
+            wallet1 = Account.from_key(wallet1_key)
             receipt = send_tx(wallet1, contract.functions.submitResult(game_id, winner_address))
             tx_result = receipt.transactionHash.hex()
             print(f"   🏟️ Arena result submitted: TX={tx_result[:20]}...")
         except Exception as e:
             print(f"   ⚠️ Arena submit failed: {e}")
             tx_result = f"failed: {e}"
-    else:
-        print(f"   ℹ️ No on-chain game — skipping result submission")
 
     payout = wager_mon * 2 * 0.95  # 5% fee
 
