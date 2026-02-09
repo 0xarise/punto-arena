@@ -1025,7 +1025,8 @@
                     View Transaction on Explorer
                 </a>
             </div>
-            <button class="result-close-btn" onclick="closeResultModal()">Close</button>
+            <button onclick="watchNextMatch()" style="margin-top: 20px; padding: 12px 32px; font-family: 'Orbitron', monospace; font-size: 14px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border: 1px solid #fbbf24; border-radius: 8px; background: rgba(251,191,36,0.15); color: #fbbf24; cursor: pointer; transition: all 0.2s;">Next Match</button>
+            <button class="result-close-btn" onclick="closeResultModal()" style="margin-top: 8px;">Close</button>
         </div>
     </div>
 
@@ -1090,6 +1091,23 @@
                 }).join('');
             } catch (err) {
                 console.error('Failed to load matches:', err);
+            }
+        }
+
+        async function watchNextMatch() {
+            // Find the next active match or go to lobby
+            try {
+                const res = await fetch('/api/arena/active');
+                const matches = await res.json();
+                const live = matches.find(m => m.status === 'playing' || m.status === 'starting');
+                if (live) {
+                    window.location.href = '/spectate/' + live.room_id;
+                } else {
+                    // No active match — go to lobby (auto-loop will start one soon)
+                    window.location.href = '/spectate';
+                }
+            } catch (err) {
+                window.location.href = '/spectate';
             }
         }
 
