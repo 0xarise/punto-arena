@@ -314,9 +314,18 @@
             titleEl.className = 'result-title';
         }
 
-        // Reason
+        // Reason (human-readable)
         if (reasonEl && data.reason) {
-            reasonEl.textContent = data.reason;
+            const reasonMap = {
+                'five_in_line': '5 in a row!',
+                'tiebreak_total_card_value': 'Tiebreak: highest total card value',
+                'tiebreak_piece_count': 'Tiebreak: most pieces on board',
+                'tiebreak_starting_player': 'Tiebreak: starting player advantage',
+                'timeout': 'Match timed out',
+                'disconnect': 'Opponent disconnected',
+                'quit': 'Opponent quit',
+            };
+            reasonEl.textContent = reasonMap[data.reason] || data.reason;
             reasonEl.style.display = 'block';
         }
 

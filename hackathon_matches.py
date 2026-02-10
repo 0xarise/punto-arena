@@ -168,35 +168,66 @@ def immediate_winning_move(game: PuntoGame, player: str, moves: List[Dict]) -> O
     return None
 
 
+def count_line_length(board, x, y, color, dx, dy) -> int:
+    """Count consecutive same-color cells in one direction from (x,y), not counting (x,y) itself."""
+    count = 0
+    cx, cy = x + dx, y + dy
+    while 0 <= cx < 6 and 0 <= cy < 6:
+        cell = board[cy][cx]
+        if cell is not None and cell["color"] == color:
+            count += 1
+            cx += dx
+            cy += dy
+        else:
+            break
+    return count
+
+
 def heuristic_score(game: PuntoGame, player: str, move: Dict) -> float:
     x = move["x"]
     y = move["y"]
     card = move["card"]
     cell = game.board[y][x]
+    color = card["color"]
 
-    # Center control + stronger card preference
-    center_bonus = 5.0 - (abs(x - 2.5) + abs(y - 2.5))
-    card_bonus = card["value"] * 0.2
+    # Center control (mild bonus)
+    center_bonus = 3.0 - (abs(x - 2.5) + abs(y - 2.5)) * 0.5
 
-    # Prefer captures when legal
-    capture_bonus = 2.5 if cell is not None and cell["player"] != player else 0.0
+    # Prefer captures of opponent cards
+    capture_bonus = 0.0
+    if cell is not None and cell["player"] != player:
+        capture_bonus = 3.0
+    elif cell is not None and cell["player"] == player and cell["color"] != color:
+        capture_bonus = -1.0  # Replacing own card with different color is usually bad
 
-    # Local support: adjacent pieces - same color = stronger bonus
-    adjacency = 0.0
-    for dy in (-1, 0, 1):
-        for dx in (-1, 0, 1):
-            if dx == 0 and dy == 0:
-                continue
-            nx, ny = x + dx, y + dy
-            if 0 <= nx < 6 and 0 <= ny < 6:
-                neighbor = game.board[ny][nx]
-                if neighbor and neighbor["player"] == player:
-                    if neighbor["color"] == card["color"]:
-                        adjacency += 1.5  # Same color = strong line potential
-                    else:
-                        adjacency += 0.3  # Different color = weak
+    # Line length scoring: count how long a line this move creates in each direction
+    # Directions: horizontal, vertical, diag-DR, diag-UR
+    directions = [(1, 0), (0, 1), (1, 1), (1, -1)]
+    best_line = 0
+    line_score = 0.0
 
-    return center_bonus + card_bonus + capture_bonus + adjacency
+    for dx, dy in directions:
+        fwd = count_line_length(game.board, x, y, color, dx, dy)
+        bwd = count_line_length(game.board, x, y, color, -dx, -dy)
+        total = fwd + bwd + 1  # +1 for the card we're placing
+
+        if total > best_line:
+            best_line = total
+
+        # Exponential bonuses for longer lines
+        if total >= 4:
+            line_score += 50.0  # One step from winning
+        elif total == 3:
+            line_score += 15.0
+        elif total == 2:
+            line_score += 4.0
+
+    # Card economy: prefer using low cards for non-critical moves
+    card_penalty = 0.0
+    if best_line < 3 and card["value"] >= 7:
+        card_penalty = -2.0  # Don't waste high cards on weak positions
+
+    return center_bonus + capture_bonus + line_score + card_penalty
 
 
 def heuristic_move(game: PuntoGame, player: str) -> Dict[str, int]:

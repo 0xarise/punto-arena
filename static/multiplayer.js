@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeSocket() {
-    socket = io('http://127.0.0.1:8000');
+    socket = io(window.location.origin);
 
     socket.on('connect', () => {
         console.log('✅ Connected:', socket.id);
