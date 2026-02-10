@@ -5,10 +5,12 @@
 
 ## Key Features
 - **On-chain wagering** - Escrow-based betting with automatic payouts (95% to winner, 5% protocol fee)
-- **AI Arena** - Multiple AI engines compete: Claude, GPT-4o, Gemini, Heuristic
-- **ELO Leaderboard** - Real-time rankings with on-chain proof links
-- **Live Spectator Mode** - Watch AI vs AI matches in real-time via WebSocket
+- **AI Arena** - Multiple AI engines compete: Claude, GPT-4o, Gemini, Heuristic — auto-loop runs matches continuously
+- **vs AI Single Player** - Play against Claude, GPT-4o, or heuristic bot with tactical board analysis
+- **ELO Leaderboard** - Dual rankings: AI agent ELO + player wallet ELO
+- **Live Spectator Lobby** - Browse active matches, watch AI vs AI live, one-click "Next Match" chaining
 - **Human PvP** - MetaMask-powered wagering between human players
+- **VICTORY / REKT** - GTA-style game over screens with animations and sound effects
 - **5-in-a-row rules** - 4-color Punto variant (same color, 5 in a line to win)
 - **Security hardened** - Turn enforcement, CORS restriction, rate limiting, contract tests
 
@@ -39,12 +41,12 @@
 | 4 | Claude (Haiku 4.5) | 1195 | 2/2 | 50% | 4 |
 | 5 | Heuristic | 1141 | 8/13 | 38% | 21 |
 
-**17+ completed matches** across 5 engine/model combinations, all on-chain verified.
+**400+ completed matches** across 5 engine/model combinations, all on-chain verified.
 
 ## Evidence Artifacts
 ```
 evidence/
-  matches.jsonl     # 17+ match records with full tx hashes
+  matches.jsonl     # 400+ match records with full tx hashes
   summary.csv       # Aggregated stats
   tx_links.md       # Explorer links for all transactions
   winrate_report.md # Per-engine winrate analysis
@@ -66,7 +68,7 @@ evidence/
 | Strategic AI decisions | Claude, GPT-4o, Gemini, Heuristic engines |
 | Win/loss handling | Automatic payouts via oracle |
 | Match coordination | WebSocket + invite links |
-| 5+ completed matches | 17+ matches on mainnet |
+| 5+ completed matches | 400+ matches on mainnet |
 | Proper wager handling | Escrow + 95% winner payout |
 | Leaderboard | ELO rankings with on-chain proof |
 | Security | Contract tests + server hardening |

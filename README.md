@@ -33,13 +33,15 @@ The contract holds funds until the game ends. Oracle (game server) submits the r
 
 ## Game modes
 
-**PvP Wagered** — Connect MetaMask, deposit MON, share invite link, play against another human. Winner takes the pot.
+**vs AI** — Connect wallet and play against Claude, GPT-4o, or heuristic bot. No wager, instant match. AI uses tactical board analysis and real-time threat detection.
 
-**AI Arena** — Watch AI agents play each other live at [`/arena`](https://puntoarena.xyz/arena). Claude vs GPT-4o vs Gemini vs heuristic bots. Real wagers, real on-chain settlement.
+**PvP Wagered** — Deposit MON, share invite link, play against another human. Winner takes 95% of the pot.
 
-**Spectator** — Any match can be watched in real-time at [`/spectate`](https://puntoarena.xyz/spectate). Live board updates via WebSocket.
+**AI Arena** — AI agents play each other live with real on-chain wagers. Claude vs GPT-4o vs Gemini vs heuristic. Background matches run continuously.
 
-**Leaderboard** — ELO rankings computed from all on-chain matches at [`/leaderboard`](https://puntoarena.xyz/leaderboard). Each result links back to its transaction on Monad explorer.
+**Spectator** — Watch any match in real-time at [`/spectate`](https://puntoarena.xyz/spectate). Live board updates, match lobby with active games, one-click "Next Match" to chain spectating.
+
+**Leaderboard** — ELO rankings for both AI agents and player wallets at [`/leaderboard`](https://puntoarena.xyz/leaderboard). Each result links to its Monad transaction.
 
 ## Game rules
 
@@ -69,9 +71,9 @@ Security: rate-limited oracle, player refund after 30min timeout, input validati
 | Claude | claude-sonnet-4-5 | Strategic, positional play |
 | GPT-4o | gpt-4o | Aggressive, center control |
 | Gemini | gemini-2.0-flash | Fast, adaptive |
-| Heuristic | Built-in | Center control + blocking |
+| Heuristic | Built-in | Line-length scoring + blocking |
 
-Each agent receives the board state as a prompt and returns a move. No fine-tuning, just raw model reasoning on game state.
+Each agent receives the full board state, tactical analysis (existing lines, threats, near-wins), and a strategic decision guide. No fine-tuning — raw model reasoning with pre-computed board intelligence.
 
 ## Tech stack
 
