@@ -407,34 +407,20 @@
             align-items: center;
         }
 
-        .preview-board {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 3px;
-            background: var(--bg-card);
+        .preview-video-wrap {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 10px;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 40px rgba(251, 191, 36, 0.15), 0 0 80px rgba(0, 0, 0, 0.5);
         }
 
-        .preview-cell {
-            aspect-ratio: 1;
-            border: 1px solid var(--border-subtle);
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: clamp(12px, 2vw, 18px);
-            background: var(--bg-board);
+        .preview-video-wrap video {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 12px;
         }
-
-        .preview-cell.c-red { background: rgba(231, 76, 60, 0.2); border-color: rgba(231, 76, 60, 0.4); color: #e74c3c; }
-        .preview-cell.c-blue { background: rgba(52, 152, 219, 0.2); border-color: rgba(52, 152, 219, 0.4); color: #3498db; }
-        .preview-cell.c-green { background: rgba(46, 204, 113, 0.2); border-color: rgba(46, 204, 113, 0.4); color: #2ecc71; }
-        .preview-cell.c-yellow { background: rgba(241, 196, 15, 0.2); border-color: rgba(241, 196, 15, 0.4); color: #f1c40f; }
 
         .preview-text h3 {
             font-family: 'Orbitron', monospace;
@@ -683,6 +669,7 @@
 
             .steps-grid { grid-template-columns: 1fr; gap: 14px; }
             .preview-layout { grid-template-columns: 1fr; gap: 28px; }
+            .preview-video-wrap { max-width: 400px; margin: 0 auto; }
             .features-grid { grid-template-columns: 1fr; gap: 14px; }
 
             .stats-bar { gap: 24px; }
@@ -801,48 +788,10 @@
         <p class="section-subtitle">Simple rules. Deep strategy. Every move counts.</p>
 
         <div class="preview-layout">
-            <div class="preview-board">
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell c-red">7</div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-
-                <div class="preview-cell"></div>
-                <div class="preview-cell c-blue">3</div>
-                <div class="preview-cell c-red">5</div>
-                <div class="preview-cell c-green">9</div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell c-blue">8</div>
-                <div class="preview-cell c-yellow">2</div>
-                <div class="preview-cell c-green">6</div>
-                <div class="preview-cell"></div>
-
-                <div class="preview-cell"></div>
-                <div class="preview-cell c-green">4</div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell c-blue">7</div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell c-yellow">1</div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
-                <div class="preview-cell"></div>
+            <div class="preview-video-wrap">
+                <video autoplay loop muted playsinline>
+                    <source src="/static/demo.mp4" type="video/mp4">
+                </video>
             </div>
 
             <div class="preview-text">
