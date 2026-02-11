@@ -64,6 +64,7 @@ let gameState = {
     status: 'idle', // idle, waiting, playing, finished
     mode: null // 'pvp' or 'ai'
 };
+let refundTimerId = null;
 
 const SESSION_KEY = 'punto_wager_session';
 const GAME_STATE_KEY = 'punto_game_state';
@@ -75,9 +76,12 @@ const CONTRACT_ABI = [
     "function getGameByRoomId(string roomId) view returns (tuple(address player1, address player2, uint256 wager, uint8 state, address winner, uint256 createdAt, string roomId))",
     "function roomIdToGameId(string roomId) view returns (uint256)",
     "function calculatePayout(uint256 wager) view returns (uint256 payout, uint256 fee)",
+    "function claimRefund(uint256 gameId)",
+    "function canClaimRefund(uint256 gameId) view returns (bool canRefund, string reason)",
     "event GameCreated(uint256 indexed gameId, address indexed player1, uint256 wager, string roomId)",
     "event GameJoined(uint256 indexed gameId, address indexed player2)",
-    "event GameFinished(uint256 indexed gameId, address indexed winner, uint256 payout, uint256 fee)"
+    "event GameFinished(uint256 indexed gameId, address indexed winner, uint256 payout, uint256 fee)",
+    "event GameRefunded(uint256 indexed gameId, address player1, address player2, uint256 refundAmount)"
 ];
 
 const CONTRACT_ADDRESS = "0x8B55cAB0051b542cB56D46d06E65CE8C0eFe48A5"; // Monad mainnet v1
@@ -229,7 +233,6 @@ async function connectWallet() {
 
         document.getElementById('connect-wallet').style.display = 'none';
         document.getElementById('wallet-info').style.display = 'block';
-        document.getElementById('mode-selection').style.display = 'block';
 
         // Initialize contract
         contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -242,15 +245,20 @@ async function connectWallet() {
 
         // Check for existing session to restore
         const session = loadSession();
-        
+
         if (window.JOIN_ROOM_ID) {
-            // Auto-join from URL
+            // Auto-join from URL — skip mode selection entirely
             console.log('Auto-joining room:', window.JOIN_ROOM_ID);
             await autoJoinWageredRoom(window.JOIN_ROOM_ID);
         } else if (session && normalizeAddress(session.address) === normalizeAddress(walletAddress)) {
             // Restore previous session
             console.log('🔄 Restoring session:', session.roomId);
             await rejoinWageredRoom(session);
+        } else {
+            // Clear stale session from different wallet
+            if (session) clearSession();
+            // Show mode selection
+            document.getElementById('mode-selection').style.display = 'block';
         }
 
     } catch (error) {
@@ -357,7 +365,7 @@ async function autoJoinWageredRoom(roomId) {
 
     showLoading('Joining game...');
     updateTxStatus('Checking on-chain game...');
-    
+
     try {
         await ensureOnChainJoin(roomId);
         emitJoin(roomId);
@@ -497,6 +505,15 @@ async function createWageredRoom() {
         document.getElementById('invite-section-wager').style.display = 'block';
         updateOpponentStatus('Share the invite link above');
 
+        // Show refund button after 2 minutes of waiting
+        if (refundTimerId) clearTimeout(refundTimerId);
+        refundTimerId = setTimeout(() => {
+            const refundBtn = document.getElementById('cancel-refund-btn');
+            if (refundBtn && gameState.status === 'waiting') {
+                refundBtn.style.display = 'inline-block';
+            }
+        }, 120000);
+
         hideLoading();
 
         // Step 5: Join room via WebSocket
@@ -535,13 +552,53 @@ function copyInviteWager() {
     const inviteLink = document.getElementById('invite-link-wager');
     inviteLink.select();
     document.execCommand('copy');
-    
+
     // Visual feedback
     const btn = event.target;
     const originalText = btn.textContent;
     btn.textContent = 'Copied!';
     setTimeout(() => btn.textContent = originalText, 1500);
 }
+
+async function cancelAndRefund() {
+    if (!contract || !gameState.roomId) return;
+
+    const roomId = gameState.roomId;
+    try {
+        showLoading('Requesting refund...');
+        const gameId = await contract.roomIdToGameId(roomId);
+        if (gameId.eq(0)) {
+            hideLoading();
+            showToast('Game not found on-chain');
+            return;
+        }
+
+        const [canRefund, reason] = await contract.canClaimRefund(gameId);
+        if (!canRefund) {
+            hideLoading();
+            showToast('Cannot refund yet: ' + reason);
+            return;
+        }
+
+        showLoading('Confirm refund in MetaMask...');
+        const tx = await contract.claimRefund(gameId);
+        showLoading('Waiting for confirmation...');
+        await tx.wait();
+        hideLoading();
+        showToast('Refund successful!');
+        setTimeout(() => playAgain(), 1500);
+    } catch (error) {
+        hideLoading();
+        // Show error but let user retry or go back to mode selection
+        const msg = error.reason || error.message || 'Refund failed';
+        showToast(msg);
+        // Ensure refund button stays visible so user can retry
+        const refundBtn = document.getElementById('cancel-refund-btn');
+        if (refundBtn) refundBtn.style.display = 'inline-block';
+    }
+}
+
+window.cancelAndRefund = cancelAndRefund;
 
 // ============================================================================
 // SOCKET.IO
@@ -611,7 +668,12 @@ function initializeSocket() {
         hideLoading();
 
         if (data.mode) {
-            gameState.mode = data.mode;
+            // Normalize mode: pvp_wagered → pvp for frontend checks
+            gameState.mode = (data.mode === 'pvp_wagered') ? 'pvp' : data.mode;
+        }
+        // Ensure PvP mode is set if we have a wager and mode wasn't explicitly set
+        if (!gameState.mode && data.wager > 0) {
+            gameState.mode = 'pvp';
         }
         if (data.wager !== undefined) {
             gameState.wager = data.wager;
@@ -630,16 +692,22 @@ function initializeSocket() {
     socket.on('game_state_restored', (data) => {
         console.log('🔄 State restored:', data);
         hideLoading();
-        
+
         if (data.your_role) {
             gameState.playerRole = data.your_role;
         }
         if (data.wager) {
             gameState.wager = data.wager;
         }
+        if (data.mode) {
+            gameState.mode = (data.mode === 'pvp_wagered') ? 'pvp' : data.mode;
+        }
+        if (!gameState.mode && data.wager > 0) {
+            gameState.mode = 'pvp';
+        }
         gameState.status = 'playing';
         saveSession();
-        
+
         startGameUI(data);
     });
 
@@ -680,6 +748,11 @@ function initializeSocket() {
 // ============================================================================
 
 function startGameUI(data) {
+    // Clear refund timer — game is starting
+    if (refundTimerId) { clearTimeout(refundTimerId); refundTimerId = null; }
+    const refundBtn = document.getElementById('cancel-refund-btn');
+    if (refundBtn) refundBtn.style.display = 'none';
+
     document.getElementById('invite-section-wager').style.display = 'none';
     document.getElementById('wager-setup').style.display = 'none';
     document.getElementById('mode-selection').style.display = 'none';
@@ -787,6 +860,47 @@ function selectCard(cardObj, cardElement) {
     // cardObj is {value, color} dict
     gameState.selectedCard = cardObj;
     cardElement.classList.add('selected');
+
+    // Highlight valid cells (adjacency rule)
+    highlightValidCells(cardObj);
+}
+
+function highlightValidCells(card) {
+    const board = gameState.boardState;
+    if (!board) return;
+
+    // Check if board is empty
+    const boardEmpty = board.every(row => row.every(cell => cell === null));
+
+    document.querySelectorAll('#game-board-wager .cell').forEach(cell => {
+        cell.classList.remove('valid-move');
+        const row = parseInt(cell.dataset.row);
+        const col = parseInt(cell.dataset.col);
+        const cellData = board[row][col];
+
+        if (cellData === null) {
+            // Empty cell: valid if board empty OR adjacent to existing card
+            if (boardEmpty || hasAdjacentCard(board, row, col)) {
+                cell.classList.add('valid-move');
+            }
+        } else if (cellData.card < card.value) {
+            // Capture: always valid if higher value
+            cell.classList.add('valid-move');
+        }
+    });
+}
+
+function hasAdjacentCard(board, row, col) {
+    for (let dr = -1; dr <= 1; dr++) {
+        for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = row + dr, nc = col + dc;
+            if (nr >= 0 && nr < 6 && nc >= 0 && nc < 6 && board[nr][nc] !== null) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function handleCellClick(row, col) {
@@ -817,10 +931,14 @@ function handleCellClick(row, col) {
     gameState.selectedCard = null;
     gameState.myTurn = false;
     document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('valid-move'));
     updateTurnIndicator();
 }
 
 function updateGameState(data) {
+    // Clear any valid-move highlights
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('valid-move'));
+
     // Update board
     updateBoard(data.board);
     gameState.boardState = data.board;
@@ -971,6 +1089,14 @@ function selectMode(mode, engine) {
 }
 
 function playAgain() {
+    // Clear refund timer
+    if (refundTimerId) { clearTimeout(refundTimerId); refundTimerId = null; }
+
+    // Leave old room on server before resetting
+    if (socket && gameState.roomId) {
+        socket.emit('leave_game', { room_id: gameState.roomId });
+    }
+
     // Reset game state but keep wallet connected
     gameState.roomId = null;
     gameState.playerRole = null;
@@ -978,6 +1104,11 @@ function playAgain() {
     gameState.myTurn = false;
     gameState.mode = null;
     gameState.aiEngine = null;
+    gameState.selectedCard = null;
+    gameState.boardState = null;
+    gameState.myCards = [];
+    gameState.opponentAddress = null;
+    gameState.wager = 0;
     clearSession();
 
     // Hide everything game-related
@@ -987,6 +1118,10 @@ function playAgain() {
     document.getElementById('wager-setup').style.display = 'none';
     const aiDiff = document.getElementById('ai-difficulty');
     if (aiDiff) aiDiff.style.display = 'none';
+
+    // Clear the board DOM
+    const board = document.getElementById('game-board-wager');
+    if (board) board.innerHTML = '';
 
     // Show mode selection (wallet is still connected)
     document.getElementById('mode-selection').style.display = 'block';

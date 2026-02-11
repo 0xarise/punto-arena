@@ -177,13 +177,19 @@ class AIPlayer:
         return lines
 
     def _get_valid_moves(self, board: List[List], hand: List[Dict]) -> List[Dict]:
-        """Return all valid moves with annotations."""
+        """Return all valid moves with annotations. Enforces adjacency rule."""
         moves = []
+        # Check if board is empty (first move — unrestricted placement)
+        board_empty = all(board[r][c] is None for r in range(6) for c in range(6))
+
         for card in hand:
             for y in range(6):
                 for x in range(6):
                     cell = board[y][x]
                     if cell is None:
+                        # Adjacency check: must be next to existing card (unless first move)
+                        if not board_empty and not self._is_adjacent(board, x, y):
+                            continue
                         moves.append({'x': x, 'y': y, 'card': card, 'type': 'place'})
                     elif cell['value'] < card['value']:
                         owner = 'own' if cell['color'] in PLAYER_COLORS.get(self.player_name, []) else 'opponent'
@@ -193,6 +199,19 @@ class AIPlayer:
                             'captures': f"{COLOR_SYMBOLS[cell['color']]}{cell['value']}"
                         })
         return moves
+
+    @staticmethod
+    def _is_adjacent(board, x, y):
+        """Check if (x,y) is adjacent (8 directions) to any existing card."""
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < 6 and 0 <= ny < 6:
+                    if board[ny][nx] is not None:
+                        return True
+        return False
 
     def _format_tactical_analysis(self, board: List[List], hand: List[Dict]) -> str:
         """Pre-compute tactical situation and format as text for the LLM."""

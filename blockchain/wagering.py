@@ -94,7 +94,7 @@ class PuntoBlockchain:
             print(f"   📤 Transaction sent: {tx_hash.hex()}")
 
             # Wait for receipt
-            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash)
+            receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=30)
 
             if receipt['status'] == 1:
                 print(f"   ✅ Result submitted successfully!")

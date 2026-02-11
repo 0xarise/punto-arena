@@ -856,13 +856,13 @@
             <div class="faq-item">
                 <div class="faq-question">What if my opponent never joins?</div>
                 <div class="faq-answer">
-                    <p>After 30 minutes, you can call claimRefund() on the smart contract to get your full wager back. No risk.</p>
+                    <p>After 2 minutes a "Cancel & Refund" button appears in the UI. Click it to get your full wager back instantly. If the UI fails, you can always claim directly on-chain after 30 minutes (see "My funds seem stuck" below).</p>
                 </div>
             </div>
             <div class="faq-item">
                 <div class="faq-question">What if the game crashes mid-match?</div>
                 <div class="faq-answer">
-                    <p>The same refund mechanism applies. If no result is submitted within the timeout, both players can reclaim their funds.</p>
+                    <p>If no result is submitted within the timeout, both players can reclaim their funds via the claimRefund function on the smart contract. Your MON is never lost — it's locked in escrow until a winner is declared or the timeout expires.</p>
                 </div>
             </div>
             <div class="faq-item">
@@ -881,6 +881,17 @@
                 <div class="faq-question">How do I get MON?</div>
                 <div class="faq-answer">
                     <p>Bridge ETH to Monad via the official Monad bridge or acquire MON on a supported exchange.</p>
+                </div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">My funds seem stuck. How do I recover them?</div>
+                <div class="faq-answer">
+                    <p>Your MON is held in the smart contract escrow, not lost. If the UI is unresponsive, you can always recover funds directly on-chain:</p>
+                    <p><strong>1.</strong> Go to <a href="https://monadexplorer.com/address/0x8B55cAB0051b542cB56D46d06E65CE8C0eFe48A5" target="_blank" style="color: #fbbf24;">the contract on Monad Explorer</a></p>
+                    <p><strong>2.</strong> Connect your wallet and find the <strong>claimRefund</strong> function under "Write Contract"</p>
+                    <p><strong>3.</strong> Enter your game ID (visible in your MetaMask transaction history from when you created or joined the game)</p>
+                    <p><strong>4.</strong> Submit the transaction — your full wager is returned if 30 minutes have passed and no winner was declared</p>
+                    <p>The refund is enforced by the smart contract itself. No admin, server, or third party can block it.</p>
                 </div>
             </div>
         </div>

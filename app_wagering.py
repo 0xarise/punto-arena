@@ -702,7 +702,7 @@ def handle_get_game_state(data):
             'your_role': player_role,
             'your_cards': sorted(
                 game.hand_claude if player_role == 'player1' else game.hand_openai,
-                reverse=True
+                key=lambda c: c['value'], reverse=True
             )
         })
         emit('game_state_restored', current_state)
@@ -985,6 +985,11 @@ def start_wagered_game(room_id):
     print(f"DEBUG: Players count = {len(room['players'])}")
     print(f"DEBUG: Wager confirmed flag = {room.get('wager_confirmed', False)}")
 
+    # Guard against double initialization
+    if room['status'] != 'waiting':
+        print(f"DEBUG: Room not in 'waiting' state ({room['status']}), skipping")
+        return
+
     # Skip if game already exists
     if room['game']:
         print(f"DEBUG: Game already exists, skipping init")
@@ -1159,6 +1164,48 @@ def handle_make_move_wagered(data):
         traceback.print_exc()
         emit('error', {'message': str(e)})
 
+
+@socketio.on('leave_game')
+def handle_leave_game(data):
+    """Player leaves current game (e.g. Play Again). Cleans up server state."""
+    sid = request.sid
+    room_id = data.get('room_id')
+    print(f"👋 Player {sid} leaving game {room_id}")
+
+    if room_id:
+        leave_room(room_id)
+
+    # Get player info before cleanup
+    leaving_role = None
+    if sid in players:
+        leaving_role = players[sid].get('role')
+        del players[sid]
+
+    # Remove from room's players dict
+    if room_id and room_id in rooms:
+        room = rooms[room_id]
+        if sid in room['players']:
+            del room['players'][sid]
+
+        # If game was active, forfeit to remaining player
+        if room.get('status') == 'playing' and room.get('game') and leaving_role:
+            remaining = [p for p in room['players'].values() if p.get('role') != leaving_role]
+            if remaining:
+                winner_role = remaining[0]['role']
+                room['status'] = 'finished'
+                room['winner'] = winner_role
+                print(f"🏳️ {leaving_role} forfeited! {winner_role} wins by forfeit.")
+                socketio.emit('move_made', {
+                    'player': leaving_role,
+                    'board': format_board(room['game'].board),
+                    'player1_cards': [],
+                    'player2_cards': [],
+                    'winner': winner_role,
+                    'next_turn': None,
+                    'forfeit': True
+                }, room=room_id)
+
+
 # ============================================================================
 # HELPERS
 # ============================================================================
@@ -1194,7 +1241,8 @@ def build_game_state(room):
             'cards': sorted(game.hand_openai, key=lambda c: c['value'], reverse=True)
         },
         'current_turn': room.get('current_turn', 'player1'),
-        'wager': room['wager']
+        'wager': room['wager'],
+        'mode': room.get('mode', 'pvp_wagered')
     }
 
 def format_board(board):

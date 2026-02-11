@@ -48,8 +48,30 @@ class PuntoGame:
         self.hand_claude = [self.deck_claude.pop(), self.deck_claude.pop()]
         self.hand_openai = [self.deck_openai.pop(), self.deck_openai.pop()]
 
+    def _board_is_empty(self):
+        """Check if the board has no cards placed yet."""
+        for row in self.board:
+            for cell in row:
+                if cell is not None:
+                    return False
+        return True
+
+    def _has_adjacent_card(self, x, y):
+        """Check if position (x,y) is adjacent (8 directions) to any existing card."""
+        for dx in [-1, 0, 1]:
+            for dy in [-1, 0, 1]:
+                if dx == 0 and dy == 0:
+                    continue
+                nx, ny = x + dx, y + dy
+                if 0 <= nx < 6 and 0 <= ny < 6:
+                    if self.board[ny][nx] is not None:
+                        return True
+        return False
+
     def is_valid_move(self, x, y, card, player):
-        """Check if move is valid. card is a dict {value, color}."""
+        """Check if move is valid. card is a dict {value, color}.
+        Rules: cards on empty cells must be adjacent to existing cards (8 directions).
+        First move is unrestricted. Captures (overwrite with higher value) are always valid."""
         if not (0 <= x < 6 and 0 <= y < 6):
             return False, "Coordinates out of bounds"
 
@@ -60,6 +82,9 @@ class PuntoGame:
         cell = self.board[y][x]
 
         if cell is None:
+            # Empty cell: must be adjacent to existing card (unless first move)
+            if not self._board_is_empty() and not self._has_adjacent_card(x, y):
+                return False, "Must place adjacent to an existing card"
             return True, "OK"
 
         # Can capture any card (own or opponent) with strictly higher value
