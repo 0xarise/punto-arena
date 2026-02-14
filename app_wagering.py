@@ -38,6 +38,7 @@ ALLOWED_ORIGINS = [
     "https://www.puntoarena.xyz",
 ]
 socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS)
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 # Initialize blockchain
 try:
@@ -65,12 +66,19 @@ def index():
 @app.route('/play')
 def play():
     """Wagering game page"""
-    return render_template('wagering.html')
+    return render_template(
+        'wagering.html',
+        contract_address=os.getenv('CONTRACT_ADDRESS', '')
+    )
 
 @app.route('/join/<room_id>')
 def join_room_page(room_id):
     """Join page for invited players"""
-    return render_template('wagering.html', join_room_id=room_id)
+    return render_template(
+        'wagering.html',
+        join_room_id=room_id,
+        contract_address=os.getenv('CONTRACT_ADDRESS', '')
+    )
 
 @app.route('/api/create_wagered_room', methods=['POST'])
 def create_wagered_room():
@@ -491,6 +499,10 @@ def handle_join_wagered_room(data):
     sid = request.sid
     print(f"   SID: {sid}")
 
+    if not player_address:
+        emit('error', {'message': 'Wallet address required'})
+        return
+
     if room_id not in rooms:
         print(f"❌ Room {room_id} not found!")
         emit('error', {'message': 'Room not found or expired'})
@@ -507,13 +519,6 @@ def handle_join_wagered_room(data):
     if player_address:
         for pid, pdata in room['players'].items():
             if pdata.get('address') and pdata['address'].lower() == player_address.lower():
-                existing_player = pdata
-                old_sid = pid
-                break
-
-    if existing_player is None:
-        for pid, pdata in room['players'].items():
-            if pdata['name'] == player_name:
                 existing_player = pdata
                 old_sid = pid
                 break
@@ -655,7 +660,20 @@ def handle_wager_confirmed(data):
         print(f"   Room already finished, ignoring")
         return
 
-    # Mark that on-chain wager is confirmed (used by join handler)
+    # Verify chain state before trusting client-side confirmation
+    if WAGERING_ENABLED and room.get('wager', 0) > 0:
+        on_chain_game = blockchain.get_game_by_room_id(room_id)
+        if not on_chain_game or on_chain_game.get('state') != 1:
+            emit('error', {'message': 'On-chain game is not active yet'})
+            return
+
+        p1 = (on_chain_game.get('player1') or '').lower()
+        p2 = (on_chain_game.get('player2') or '').lower()
+        if p1 == ZERO_ADDRESS.lower() or p2 == ZERO_ADDRESS.lower():
+            emit('error', {'message': 'Both wagers must be deposited first'})
+            return
+
+    # Mark that on-chain wager is confirmed (used by join/start handlers)
     room['wager_confirmed'] = True
 
     if room['status'] == 'playing' and room['game']:
@@ -997,22 +1015,38 @@ def start_wagered_game(room_id):
 
     # Verify both players deposited on-chain (if wagering enabled)
     if WAGERING_ENABLED and room['wager'] > 0:
-        # If frontend already confirmed on-chain, trust it
-        if room.get('wager_confirmed'):
-            print(f"✅ Using frontend wager_confirmed flag (on-chain already verified)")
-        else:
-            print(f"DEBUG: Checking blockchain for room {room_id}...")
-            # Check blockchain for game creation
-            on_chain_game = blockchain.get_game_by_room_id(room_id)
+        print(f"DEBUG: Checking blockchain for room {room_id}...")
+        on_chain_game = blockchain.get_game_by_room_id(room_id)
+        if not on_chain_game or on_chain_game.get('state') != 1:  # 1 = ACTIVE
+            print("⚠️  Waiting for on-chain wager confirmation...")
+            socketio.emit('waiting_for_wager', {
+                'message': 'Waiting for blockchain confirmation...'
+            }, room=room_id)
+            return
 
-            if not on_chain_game or on_chain_game['state'] != 1:  # 1 = ACTIVE
-                print("⚠️  Waiting for on-chain wager confirmation...")
-                socketio.emit('waiting_for_wager', {
-                    'message': 'Waiting for blockchain confirmation...'
-                }, room=room_id)
-                return
-            else:
-                print(f"✅ On-chain game verified: {on_chain_game}")
+        chain_p1 = (on_chain_game.get('player1') or '').lower()
+        chain_p2 = (on_chain_game.get('player2') or '').lower()
+        if chain_p1 == ZERO_ADDRESS.lower() or chain_p2 == ZERO_ADDRESS.lower():
+            print("⚠️  Waiting for both on-chain deposits...")
+            socketio.emit('waiting_for_wager', {
+                'message': 'Waiting for both wager deposits...'
+            }, room=room_id)
+            return
+
+        room_player_addrs = {
+            (p.get('address') or '').lower()
+            for p in room['players'].values()
+            if p.get('address')
+        }
+        chain_players = {chain_p1, chain_p2}
+        if room_player_addrs and not room_player_addrs.issubset(chain_players):
+            print("⚠️  Room players do not match on-chain game participants")
+            socketio.emit('error', {
+                'message': 'On-chain game participants mismatch'
+            }, room=room_id)
+            return
+
+        print(f"✅ On-chain game verified: {on_chain_game}")
 
     # Initialize game
     print(f"DEBUG: Initializing PuntoGame...")

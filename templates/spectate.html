@@ -1081,17 +1081,28 @@
                 list.innerHTML = matches.map(m => {
                     const statusColor = m.status === 'playing' ? '#10b981' : m.status === 'starting' ? '#fbbf24' : '#555577';
                     const statusLabel = m.status === 'playing' ? 'LIVE' : m.status === 'starting' ? 'STARTING' : 'FINISHED';
-                    const winnerText = m.winner ? (' — Player ' + m.winner + ' wins') : '';
+                    const roomId = String(m.room_id || '');
+                    const safeRoomId = encodeURIComponent(roomId);
+                    const engine1 = escapeHtml(String(m.engine1 || '--'));
+                    const engine2 = escapeHtml(String(m.engine2 || '--'));
+                    const roomShort = escapeHtml(roomId.slice(0, 12));
+                    const winnerText = m.winner ? (' — Player ' + escapeHtml(String(m.winner)) + ' wins') : '';
                     const isLive = m.status === 'playing' || m.status === 'starting';
-                    return `<a href="/spectate/${m.room_id}" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--bg-secondary); border: 1px solid ${isLive ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius: 10px; text-decoration: none; transition: all 0.2s; ${isLive ? 'box-shadow: 0 0 12px rgba(16,185,129,0.1);' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${isLive ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}'">
+                    return `<a href="/spectate/${safeRoomId}" style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--bg-secondary); border: 1px solid ${isLive ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}; border-radius: 10px; text-decoration: none; transition: all 0.2s; ${isLive ? 'box-shadow: 0 0 12px rgba(16,185,129,0.1);' : ''}" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='${isLive ? 'rgba(16,185,129,0.3)' : 'var(--border-subtle)'}'">
                         <span style="background: ${statusColor}; color: white; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; text-transform: uppercase; ${m.status === 'playing' ? 'animation: live-pulse 2s ease-in-out infinite;' : ''}">${statusLabel}</span>
-                        <span style="color: var(--text-primary); font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 600; letter-spacing: 1px;">${m.engine1} vs ${m.engine2}</span>
-                        <span style="color: var(--text-muted); font-size: 12px; margin-left: auto;">${m.room_id.slice(0,12)}${winnerText}</span>
+                        <span style="color: var(--text-primary); font-family: 'Orbitron', monospace; font-size: 13px; font-weight: 600; letter-spacing: 1px;">${engine1} vs ${engine2}</span>
+                        <span style="color: var(--text-muted); font-size: 12px; margin-left: auto;">${roomShort}${winnerText}</span>
                     </a>`;
                 }).join('');
             } catch (err) {
                 console.error('Failed to load matches:', err);
             }
+        }
+
+        function escapeHtml(value) {
+            const div = document.createElement('div');
+            div.textContent = value;
+            return div.innerHTML;
         }
 
         async function watchNextMatch() {

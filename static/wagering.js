@@ -77,14 +77,14 @@ const CONTRACT_ABI = [
     "function roomIdToGameId(string roomId) view returns (uint256)",
     "function calculatePayout(uint256 wager) view returns (uint256 payout, uint256 fee)",
     "function claimRefund(uint256 gameId)",
-    "function canClaimRefund(uint256 gameId) view returns (bool canRefund, string reason)",
+    "function canClaimRefund(uint256 gameId) view returns (bool canRefund, uint256 timeUntilRefund)",
     "event GameCreated(uint256 indexed gameId, address indexed player1, uint256 wager, string roomId)",
     "event GameJoined(uint256 indexed gameId, address indexed player2)",
     "event GameFinished(uint256 indexed gameId, address indexed winner, uint256 payout, uint256 fee)",
     "event GameRefunded(uint256 indexed gameId, address player1, address player2, uint256 refundAmount)"
 ];
 
-const CONTRACT_ADDRESS = "0x8B55cAB0051b542cB56D46d06E65CE8C0eFe48A5"; // Monad mainnet v1
+const CONTRACT_ADDRESS = (window.APP_CONFIG && window.APP_CONFIG.contractAddress) || "";
 
 // Monad Network Config
 const MONAD_NETWORK = {
@@ -234,8 +234,13 @@ async function connectWallet() {
         document.getElementById('connect-wallet').style.display = 'none';
         document.getElementById('wallet-info').style.display = 'block';
 
-        // Initialize contract
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        // Initialize contract (required for wagered mode)
+        if (CONTRACT_ADDRESS) {
+            contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        } else {
+            contract = null;
+            console.warn('Contract address is not configured in this deployment.');
+        }
 
         console.log('✅ Wallet connected:', walletAddress);
         hideLoading();
@@ -406,7 +411,9 @@ function emitJoin(roomId) {
 }
 
 async function ensureOnChainJoin(roomId) {
-    if (!contract) return;
+    if (!contract) {
+        throw new Error('Contract not configured on this deployment');
+    }
 
     const gameId = await contract.roomIdToGameId(roomId);
     if (gameId.eq(0)) {
@@ -453,6 +460,11 @@ async function createWageredRoom() {
         return;
     }
 
+    if (!contract) {
+        showToast('Contract not configured. Wagered mode is unavailable.');
+        return;
+    }
+
     try {
         // Step 1: Check balance before doing anything
         if (provider) {
@@ -487,18 +499,16 @@ async function createWageredRoom() {
         showLoading('Confirm transaction in MetaMask...');
 
         // Step 3: Create game on blockchain (before showing invite link)
-        if (contract) {
-            const tx = await contract.createGame(data.room_id, {
-                value: ethers.utils.parseEther(wagerAmount.toString())
-            });
+        const tx = await contract.createGame(data.room_id, {
+            value: ethers.utils.parseEther(wagerAmount.toString())
+        });
 
-            updateTxStatus(`Transaction sent: ${tx.hash.slice(0, 10)}...`);
-            showLoading('Waiting for confirmation...');
+        updateTxStatus(`Transaction sent: ${tx.hash.slice(0, 10)}...`);
+        showLoading('Waiting for confirmation...');
 
-            await tx.wait();
+        await tx.wait();
 
-            updateTxStatus('✅ Wager deposited! Waiting for opponent...');
-        }
+        updateTxStatus('✅ Wager deposited! Waiting for opponent...');
 
         // Step 4: Only show invite link AFTER successful on-chain deposit
         document.getElementById('invite-link-wager').value = data.invite_link;
@@ -561,7 +571,11 @@ function copyInviteWager() {
 }
 
 async function cancelAndRefund() {
-    if (!contract || !gameState.roomId) return;
+    if (!gameState.roomId) return;
+    if (!contract) {
+        showToast('Contract not configured');
+        return;
+    }
 
     const roomId = gameState.roomId;
     try {
@@ -573,10 +587,12 @@ async function cancelAndRefund() {
             return;
         }
 
-        const [canRefund, reason] = await contract.canClaimRefund(gameId);
+        const [canRefund, timeUntilRefund] = await contract.canClaimRefund(gameId);
         if (!canRefund) {
             hideLoading();
-            showToast('Cannot refund yet: ' + reason);
+            const secondsLeft = timeUntilRefund?.toNumber ? timeUntilRefund.toNumber() : Number(timeUntilRefund || 0);
+            const minutesLeft = Math.max(1, Math.ceil(secondsLeft / 60));
+            showToast(`Cannot refund yet: ~${minutesLeft}m remaining`);
             return;
         }
 

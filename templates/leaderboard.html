@@ -800,7 +800,7 @@
                 const matches = entry.matches || (wins + losses);
                 const winrate = matches > 0 ? ((wins / matches) * 100).toFixed(1) : '0.0';
                 const elo = entry.elo || 1000;
-                const agentName = escapeHtml(entry.agent_name || 'Unknown');
+                const agentName = escapeHtml(entry.engine || entry.agent_name || 'Unknown');
                 const engine = escapeHtml(entry.engine || '');
 
                 // Rank styling
@@ -818,10 +818,13 @@
 
                 // Proof link
                 let proofHtml = '<span class="no-proof">--</span>';
-                if (entry.proof_link) {
-                    const txUrl = entry.proof_link.startsWith('http')
-                        ? entry.proof_link
-                        : EXPLORER_BASE + entry.proof_link;
+                const proofLink = (Array.isArray(entry.proof_links) && entry.proof_links.length > 0)
+                    ? entry.proof_links[0]
+                    : entry.proof_link;
+                if (proofLink) {
+                    const txUrl = proofLink.startsWith('http')
+                        ? proofLink
+                        : EXPLORER_BASE + proofLink;
                     proofHtml = `
                         <a href="${escapeHtml(txUrl)}" target="_blank" rel="noopener noreferrer" class="proof-link">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

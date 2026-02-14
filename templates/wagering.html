@@ -1063,8 +1063,11 @@
         </div>
     </footer>
 
-    <script src="/static/wagering.js"></script>
     <script>
+        window.APP_CONFIG = {
+            contractAddress: {{ (contract_address or '')|tojson }}
+        };
+
         // Auto-join if URL contains /join/
         const joinMatch = window.location.pathname.match(/\/join\/(.+)/);
         if (joinMatch) {
@@ -1072,5 +1075,6 @@
             console.log('Will auto-join room:', window.JOIN_ROOM_ID);
         }
     </script>
+    <script src="/static/wagering.js"></script>
 </body>
 </html>

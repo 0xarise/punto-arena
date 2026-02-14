@@ -9,12 +9,17 @@ import os
 import time
 from typing import Dict
 
+import pytest
 from web3 import Web3
 from web3.exceptions import ContractLogicError
 from eth_account import Account
 from dotenv import load_dotenv
 
 load_dotenv()
+
+# This file is an on-chain integration suite (not a fast unit-test module).
+# Run manually with: python test_contract_hardening.py
+pytestmark = pytest.mark.skip(reason="On-chain integration suite; run manually as script")
 
 # ============================================================================
 # CONFIG
