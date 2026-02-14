@@ -12,6 +12,7 @@ from flask_cors import CORS
 import os
 import secrets
 import threading
+from collections import defaultdict, deque
 from datetime import datetime, timezone
 from enum import Enum
 import random
@@ -53,6 +54,45 @@ except Exception as e:
 rooms = {}
 players = {}
 last_move_time = {}  # sid -> timestamp for rate limiting
+
+# Soft anti-spam rate limits (public endpoints remain open for testers).
+RATE_LIMIT_RULES = {
+    'arena_start': (3, 60),      # 3 starts/minute per IP
+    'create_ai_room': (10, 60),  # 10 AI rooms/minute per IP
+}
+rate_limit_buckets = defaultdict(deque)
+rate_limit_lock = threading.Lock()
+
+
+def get_client_ip():
+    forwarded_for = request.headers.get('X-Forwarded-For', '')
+    if forwarded_for:
+        return forwarded_for.split(',')[0].strip()
+    real_ip = request.headers.get('X-Real-IP')
+    if real_ip:
+        return real_ip.strip()
+    return request.remote_addr or 'unknown'
+
+
+def check_rate_limit(scope):
+    """Sliding-window limiter per IP for public endpoints."""
+    limit, window_seconds = RATE_LIMIT_RULES[scope]
+    now = time.time()
+    bucket_key = f"{scope}:{get_client_ip()}"
+
+    with rate_limit_lock:
+        bucket = rate_limit_buckets[bucket_key]
+        cutoff = now - window_seconds
+        while bucket and bucket[0] <= cutoff:
+            bucket.popleft()
+
+        if len(bucket) >= limit:
+            retry_after = max(1, int(window_seconds - (now - bucket[0])))
+            return False, retry_after
+
+        bucket.append(now)
+
+    return True, 0
 
 # ============================================================================
 # ROUTES
@@ -192,6 +232,17 @@ def active_arena_matches():
 @app.route('/api/arena/start', methods=['POST'])
 def start_arena_match():
     """Start an AI vs AI match with spectator broadcasting"""
+    allowed, retry_after = check_rate_limit('arena_start')
+    if not allowed:
+        return (
+            jsonify({
+                'error': 'Rate limit exceeded. Try again shortly.',
+                'retry_after_seconds': retry_after,
+            }),
+            429,
+            {'Retry-After': str(retry_after)}
+        )
+
     data = request.json or {}
     engine1 = data.get('engine1', os.getenv('AGENT1_ENGINE', 'heuristic'))
     engine2 = data.get('engine2', os.getenv('AGENT2_ENGINE', 'heuristic'))
@@ -732,6 +783,13 @@ def handle_get_game_state(data):
 @socketio.on('create_ai_room')
 def handle_create_ai_room(data):
     """Create a room for human vs AI (no wager, no blockchain)"""
+    data = data or {}
+
+    allowed, retry_after = check_rate_limit('create_ai_room')
+    if not allowed:
+        emit('error', {'message': f'Rate limit exceeded. Try again in {retry_after}s.'})
+        return
+
     wallet_address = data.get('wallet_address', 'anonymous')
     engine = data.get('engine', 'heuristic')
     sid = request.sid
